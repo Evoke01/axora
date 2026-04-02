@@ -36,21 +36,27 @@ function formatDate(value: string) {
 }
 
 function App() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", handler);
+    return () => window.removeEventListener("scroll", handler);
+  }, []);
+
   return (
     <div className="shell">
-      <header className="masthead">
+      <header className={`masthead${scrolled ? " scrolled" : ""}`}>
         <Link to="/" className="brand">
           <span className="brand-mark">AX</span>
-          <span>
-            <strong>Axora Core</strong>
-            <small>Lead-to-booking automation for salons and gyms</small>
-          </span>
+          <strong>Axora</strong>
         </Link>
         <nav className="nav">
           <NavLink to="/" end className={({ isActive }) => (isActive ? "active" : undefined)}>Overview</NavLink>
-          <NavLink to="/start" className={({ isActive }) => (isActive ? "active" : undefined)}>Get Started</NavLink>
+          <NavLink to="/start" className={({ isActive }) => (isActive ? "active" : undefined)}>Get started</NavLink>
           <NavLink to="/pricing" className={({ isActive }) => (isActive ? "active" : undefined)}>Pricing</NavLink>
         </nav>
+        <Link to="/start" className="nav-cta">Get started</Link>
       </header>
 
       <Routes>
@@ -61,6 +67,14 @@ function App() {
         <Route path="/book/:businessSlug" element={<BookingPage />} />
         <Route path="/admin/:businessSlug" element={<AdminPage />} />
       </Routes>
+
+      <footer>
+        <p>© 2026 Axora. All rights reserved.</p>
+        <div className="footer-links">
+          <Link to="/start">Launch app</Link>
+          <Link to="/pricing">Pricing</Link>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -76,8 +90,8 @@ function LandingPage() {
             Axora gives salons and gyms a branded lead page, a booking page, automated follow-up, and a dashboard that speaks in conversion and no-show impact instead of raw records.
           </p>
           <div className="hero-actions">
-            <Link to="/start" className="button primary">Get Started</Link>
-            <Link to="/pricing" className="button ghost">See pricing</Link>
+            <Link to="/start" className="button primary">Get started</Link>
+            <Link to="/pricing" className="button ghost">See pricing →</Link>
           </div>
           <div className="impact-strip">
             <div>
@@ -274,7 +288,7 @@ function PricingPage() {
 
 function PlanCard({ plan }: { plan: Plan }) {
   return (
-    <article className={`plan ${plan.tier === "pro" ? "plan-accent" : ""}`}>
+    <article className={`plan${plan.tier === "pro" ? " plan-accent" : ""}`}>
       <div>
         <p className="plan-tier">{plan.label}</p>
         <h2>{plan.priceLabel}</h2>
@@ -295,7 +309,7 @@ function PlanCard({ plan }: { plan: Plan }) {
           </ul>
         </div>
       ) : null}
-      <Link className="button primary" to="/start">
+      <Link className="plan-btn" to="/start">
         {plan.tier === "starter" ? "Launch Starter" : "Request Pro setup"}
       </Link>
     </article>
