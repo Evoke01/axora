@@ -1,0 +1,3 @@
+[build]
+  command = "npm run -w @business-automation/shared build && npm run -w @business-automation/client build"
+  publish = "client/dist"
