@@ -737,6 +737,7 @@ footer p{font-size:12px;color:rgba(255,255,255,0.15)}
     <a href="#what">What we do</a>
     <a href="#how">How it works</a>
     <a href="#pricing">Pricing</a>
+    <a href="/admin" style="color:rgba(255,255,255,0.25);font-size:12px">Admin login</a>
   </div>
   <button class="nav-cta" onclick="openDemo()">Book Demo</button>
 </nav>
@@ -768,7 +769,7 @@ footer p{font-size:12px;color:rgba(255,255,255,0.15)}
     <p class="hero-desc">Leads, payments, and reports handled automatically. No manual follow-ups. No messy spreadsheets.</p>
 
     <div class="hero-btns">
-      <button class="btn-primary" onclick="openDemo()">Get Started</button>
+      <a href="/start" class="btn-primary">Get started</a>
       <a href="#how" class="btn-outline">See how it works →</a>
     </div>
 
@@ -934,45 +935,41 @@ footer p{font-size:12px;color:rgba(255,255,255,0.15)}
 <div id="pricing">
   <div class="section-inner">
     <div class="section-label reveal">Pricing</div>
-    <div class="pricing-grid">
+    <div class="pricing-grid" style="grid-template-columns:repeat(2,1fr)">
       <div class="plan reveal">
         <div class="plan-tier">Starter</div>
-        <div class="plan-price">₹799<span class="plan-period">/mo</span></div>
-        <p class="plan-tagline">For small businesses just getting started with automation.</p>
+        <div class="plan-price">$29<span class="plan-period">/mo</span></div>
+        <p class="plan-tagline">Launch a business funnel that proves revenue impact fast.</p>
         <ul class="plan-list">
-          <li>Lead auto-response</li>
-          <li>Basic WhatsApp replies</li>
-          <li>1 automation workflow</li>
-          <li>Email support</li>
+          <li>Lead capture and booking pages</li>
+          <li>Impact dashboard with conversion metrics</li>
+          <li>Confirmation, reminder and follow-up emails</li>
+          <li>Up to 150 bookings/mo</li>
+          <li>3 automation workflows</li>
         </ul>
-        <button class="plan-btn" onclick="openDemo()">Get started</button>
+        <div class="locked-preview" style="margin-bottom:20px;padding:12px 0;border-top:1px solid rgba(255,255,255,0.06)">
+          <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:8px">Unlocks with Pro</div>
+          <ul class="plan-list" style="opacity:0.35">
+            <li>Custom branding</li>
+            <li>SMS and WhatsApp</li>
+            <li>Calendar sync</li>
+          </ul>
+        </div>
+        <a href="/start" class="plan-btn">Launch Starter</a>
       </div>
       <div class="plan featured reveal reveal-delay-1">
         <div class="plan-badge">Most popular</div>
-        <div class="plan-tier">Basic</div>
-        <div class="plan-price">₹1,499<span class="plan-period">/mo</span></div>
-        <p class="plan-tagline">For growing businesses that need broader automation coverage.</p>
+        <div class="plan-tier">Pro</div>
+        <div class="plan-price">$99<span class="plan-period">/mo</span></div>
+        <p class="plan-tagline">Built for operators who want higher volume and sharper reporting.</p>
         <ul class="plan-list">
           <li>Everything in Starter</li>
-          <li>Payment reminders</li>
-          <li>Daily reports</li>
-          <li>Data sync (Sheets/CRM)</li>
-          <li>3 workflows</li>
+          <li>Higher automation capacity</li>
+          <li>Up to 1,000 bookings/mo</li>
+          <li>12 automation workflows</li>
+          <li>Priority support and wrapper-site rollout</li>
         </ul>
-        <button class="plan-btn" onclick="openDemo()">Get started</button>
-      </div>
-      <div class="plan reveal reveal-delay-2">
-        <div class="plan-tier">Growth</div>
-        <div class="plan-price">₹2,999<span class="plan-period">/mo</span></div>
-        <p class="plan-tagline">Full automation and AI capabilities for scaling businesses.</p>
-        <ul class="plan-list">
-          <li>Everything in Basic</li>
-          <li>Basic AI replies</li>
-          <li>Unlimited workflows</li>
-          <li>Priority support</li>
-          <li>Custom integrations</li>
-        </ul>
-        <button class="plan-btn" onclick="openDemo()">Get started</button>
+        <a href="/start" class="plan-btn">Request Pro setup</a>
       </div>
     </div>
   </div>
@@ -1019,7 +1016,7 @@ footer p{font-size:12px;color:rgba(255,255,255,0.15)}
   <p class="cta-sub reveal">Start automating today. Your first workflow is live in 24 hours.</p>
   <div class="cta-btns reveal">
     <button class="btn-primary" onclick="openDemo()">Book a Demo</button>
-    <a href="#what" class="btn-outline">Learn more →</a>
+    <a href="/pricing" class="btn-outline">See all features →</a>
   </div>
 </div>
 
@@ -1035,7 +1032,7 @@ footer p{font-size:12px;color:rgba(255,255,255,0.15)}
     </svg>
     <span class="footer-wm">Axora</span>
   </a>
-  <p>© 2026 Axora. All rights reserved.</p>
+  <div style="display:flex;align-items:center;gap:20px"><p style="font-size:12px;color:rgba(255,255,255,0.15)">© 2026 Axora. All rights reserved.</p><a href="/start" style="font-size:12px;color:rgba(255,255,255,0.2);text-decoration:none;letter-spacing:0.04em">Launch app →</a><a href="/pricing" style="font-size:12px;color:rgba(255,255,255,0.2);text-decoration:none;letter-spacing:0.04em">Pricing</a></div>
 </footer>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
@@ -1290,6 +1287,7 @@ document.addEventListener('keydown', function(e){
     </div>
     <div class="demo-title">Book a Demo</div>
     <div class="demo-sub">Choose how you'd like to reach us. We'll get back to you within hours.</div>
+    <div style="text-align:center;margin:-8px 0 4px"><a href="/start" style="font-size:11px;color:rgba(255,255,255,0.25);letter-spacing:0.04em;text-decoration:none;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:1px">Already signed up? Go to /start →</a></div>
     <div class="demo-btns">
       <a class="demo-btn" href="https://www.instagram.com/axora.ops?igsh=MXZ6bDdham5jN2dpNA==" target="_blank" rel="noopener">
         <div class="demo-btn-icon ig">
