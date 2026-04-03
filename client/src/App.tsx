@@ -338,6 +338,126 @@ function useBusinessConfig(slug: string | undefined) {
   return { config, loading };
 }
 
+/* ─── LeadPage ────────────────────────────────── */
+function LeadPage() {
+  const { businessSlug } = useParams();
+  const { config, loading } = useBusinessConfig(businessSlug);
+  const [form, setForm] = useState({ name: "", email: "", phone: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!businessSlug) return;
+    setSubmitting(true); setError(null);
+    try {
+      await createLead(businessSlug, form);
+      setSuccess(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not submit.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (loading) return <LoadingPanel label="Loading..." />;
+  if (!config) return <main className="page page-narrow"><p>Business not found.</p></main>;
+
+  if (success) {
+    return (
+      <main className="page page-narrow">
+        <section className="page-header">
+          <h1>Thank you!</h1>
+          <p className="lede">We've received your info. {config.business.name} will be in touch soon.</p>
+        </section>
+      </main>
+    );
+  }
+
+  return (
+    <main className="page page-narrow">
+      <section className="page-header">
+        <h1>{config.business.settings.leadHeadline}</h1>
+        <p className="lede">{config.business.settings.leadDescription}</p>
+      </section>
+      <form className="launch-form" onSubmit={handleSubmit}>
+        <label>Name<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></label>
+        <label>Email<input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required /></label>
+        <label>Phone<input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required /></label>
+        <button className="button primary" type="submit" disabled={submitting}>{submitting ? "Submitting..." : "Submit"}</button>
+        {error && <p className="feedback error">{error}</p>}
+      </form>
+    </main>
+  );
+}
+
+/* ─── BookingPage ─────────────────────────────── */
+function BookingPage() {
+  const { businessSlug } = useParams();
+  const { config, loading } = useBusinessConfig(businessSlug);
+  const [form, setForm] = useState({ name: "", email: "", phone: "", service: "", scheduledAt: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (config && config.business.services.length > 0 && !form.service) {
+      setForm((f) => ({ ...f, service: config.business.services[0] }));
+    }
+  }, [config, form.service]);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!businessSlug) return;
+    setSubmitting(true); setError(null);
+    try {
+      await createBooking(businessSlug, { ...form, scheduledAt: new Date(form.scheduledAt).toISOString() });
+      setSuccess(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not book.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (loading) return <LoadingPanel label="Loading..." />;
+  if (!config) return <main className="page page-narrow"><p>Business not found.</p></main>;
+
+  if (success) {
+    return (
+      <main className="page page-narrow">
+        <section className="page-header">
+          <h1>Booking confirmed!</h1>
+          <p className="lede">You'll receive a confirmation email shortly from {config.business.name}.</p>
+        </section>
+      </main>
+    );
+  }
+
+  return (
+    <main className="page page-narrow">
+      <section className="page-header">
+        <h1>{config.business.settings.bookingHeadline}</h1>
+        <p className="lede">{config.business.settings.bookingDescription}</p>
+      </section>
+      <form className="launch-form" onSubmit={handleSubmit}>
+        <label>Name<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></label>
+        <label>Email<input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required /></label>
+        <label>Phone<input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required /></label>
+        <label>Service
+          <select value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })}>
+            {config.business.services.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </label>
+        <label>Date & Time<input type="datetime-local" value={form.scheduledAt} onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })} required /></label>
+        <button className="button primary" type="submit" disabled={submitting}>{submitting ? "Booking..." : "Book now"}</button>
+        {error && <p className="feedback error">{error}</p>}
+      </form>
+    </main>
+  );
+}
+
 /* ─── App Shell ──────────────────────────────── */
 export default function App() {
   return (
@@ -352,6 +472,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/start" element={<StartPage />} />
+        <Route path="/lead/:businessSlug" element={<LeadPage />} />
+        <Route path="/book/:businessSlug" element={<BookingPage />} />
         <Route path="/admin/:businessSlug" element={<AdminPage />} />
       </Routes>
     </div>
