@@ -250,8 +250,11 @@ function AdminPage() {
   async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); if (!businessSlug) return;
     setLoading(true);
-    try { await login(businessSlug, passcode); setDashboard(await fetchDashboard(businessSlug)); }
-    catch (err) { setError("Invalid passcode."); }
+    try { 
+      await login(businessSlug, passcode); 
+      setDashboard(await fetchDashboard(businessSlug)); 
+    }
+    catch (err) { setError(err instanceof Error ? err.message : "Login failed."); }
     finally { setLoading(false); }
   }
 

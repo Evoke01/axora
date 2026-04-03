@@ -104,7 +104,7 @@ export function createApp(config: AppConfig, bookingService: BookingService) {
 
       res.cookie(SESSION_COOKIE, authenticatedSlug, {
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: config.NODE_ENV === "production" ? "none" : "lax",
         signed: true,
         secure: config.NODE_ENV === "production",
         maxAge: 1000 * 60 * 60 * 8,
