@@ -12,6 +12,12 @@ import type {
 
 const API = import.meta.env.VITE_API_URL ?? "";
 
+let _authToken: string | null = null;
+
+export function setAuthToken(token: string | null) {
+  _authToken = token;
+}
+
 type JsonOptions = RequestInit & {
   jsonBody?: unknown;
 };
@@ -22,9 +28,9 @@ async function requestJson<T>(path: string, options: JsonOptions = {}): Promise<
   // Apply the API prefix here
   const response = await fetch(`${API}${path}`, {
     ...requestOptions,
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...(_authToken ? { Authorization: `Bearer ${_authToken}` } : {}),
       ...(requestOptions.headers ?? {}),
     },
     body: jsonBody === undefined ? requestOptions.body : JSON.stringify(jsonBody),
@@ -87,14 +93,17 @@ export function createBooking(businessSlug: string, input: BookingInput) {
   });
 }
 
-export function login(businessSlug: string, passcode: string) {
-  return requestJson<{ ok: true }>(`/api/admin/${businessSlug}/login`, {
+export async function login(businessSlug: string, passcode: string) {
+  const result = await requestJson<{ ok: true; token: string }>(`/api/admin/${businessSlug}/login`, {
     method: "POST",
     jsonBody: { passcode },
   });
+  setAuthToken(result.token);
+  return result;
 }
 
-export function logout(businessSlug: string) {
+export async function logout(businessSlug: string) {
+  setAuthToken(null);
   return requestJson<{ ok: true }>(`/api/admin/${businessSlug}/logout`, {
     method: "POST",
   });

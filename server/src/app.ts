@@ -8,23 +8,47 @@ import {
   leadSchema,
   publicConfigSchema,
 } from "@business-automation/shared";
-import cookieParser from "cookie-parser";
 import cors from "cors";
+import { createHmac } from "node:crypto";
 import express from "express";
 import { ZodError } from "zod";
 import type { AppConfig } from "./config.js";
 import type { BookingService } from "./service.js";
 
-const SESSION_COOKIE = "axora_admin";
+function signToken(slug: string, secret: string): string {
+  const sig = createHmac("sha256", secret).update(slug).digest("hex");
+  return Buffer.from(`${slug}:${sig}`).toString("base64url");
+}
 
-function requireAdmin(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const businessSlug = Array.isArray(req.params.businessSlug) ? req.params.businessSlug[0] : req.params.businessSlug;
-  if (businessSlug && req.signedCookies?.[SESSION_COOKIE] === businessSlug) {
-    next();
-    return;
+function verifyToken(token: string, secret: string): string | null {
+  try {
+    const decoded = Buffer.from(token, "base64url").toString();
+    const idx = decoded.indexOf(":");
+    if (idx < 1) return null;
+    const slug = decoded.slice(0, idx);
+    const sig = decoded.slice(idx + 1);
+    const expected = createHmac("sha256", secret).update(slug).digest("hex");
+    if (sig !== expected) return null;
+    return slug;
+  } catch {
+    return null;
   }
+}
 
-  res.status(401).json({ error: "Admin session required." });
+function createRequireAdmin(secret: string) {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const businessSlug = Array.isArray(req.params.businessSlug) ? req.params.businessSlug[0] : req.params.businessSlug;
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.slice(7);
+      const slug = verifyToken(token, secret);
+      if (slug && slug === businessSlug) {
+        next();
+        return;
+      }
+    }
+    res.status(401).json({ error: "Admin session required." });
+  };
 }
 
 function handleError(error: unknown, res: express.Response) {
@@ -48,9 +72,10 @@ function handleError(error: unknown, res: express.Response) {
 export function createApp(config: AppConfig, bookingService: BookingService) {
   const app = express();
 
+  const requireAdmin = createRequireAdmin(config.SESSION_SECRET);
+
   app.use(cors({ origin: config.CLIENT_ORIGIN, credentials: true }));
   app.use(express.json());
-  app.use(cookieParser(config.SESSION_SECRET));
 
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, app: "business-automation-mvp", emailMode: config.EMAIL_MODE });
@@ -101,23 +126,14 @@ export function createApp(config: AppConfig, bookingService: BookingService) {
     try {
       const businessSlug = Array.isArray(req.params.businessSlug) ? req.params.businessSlug[0] : req.params.businessSlug;
       const authenticatedSlug = await bookingService.loginBusinessAdmin(businessSlug, req.body?.passcode ?? "");
-
-      res.cookie(SESSION_COOKIE, authenticatedSlug, {
-        httpOnly: true,
-        sameSite: config.NODE_ENV === "production" ? "none" : "lax",
-        signed: true,
-        secure: config.NODE_ENV === "production",
-        maxAge: 1000 * 60 * 60 * 8,
-      });
-
-      res.json({ ok: true });
+      const token = signToken(authenticatedSlug, config.SESSION_SECRET);
+      res.json({ ok: true, token });
     } catch (error) {
       handleError(error, res);
     }
   });
 
   app.post("/api/admin/:businessSlug/logout", (_req, res) => {
-    res.clearCookie(SESSION_COOKIE);
     res.json({ ok: true });
   });
 
