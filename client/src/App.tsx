@@ -275,15 +275,23 @@ function AdminPage() {
     );
   }
 
+  async function handleLogout() {
+    if (businessSlug) await logout(businessSlug);
+    setDashboard(null);
+    setPasscode("");
+  }
+
   return (
     <main className="page">
       <header className="admin-header">
         <h1>{config?.business.name} Admin</h1>
-        <button className="button ghost" onClick={() => window.location.reload()}>Logout</button>
+        <button className="button ghost" onClick={handleLogout}>Logout</button>
       </header>
       <div className="metrics-grid">
-        <div className="surface"><h3>Leads</h3><p>{dashboard.stats.totalLeads}</p></div>
-        <div className="surface"><h3>Bookings</h3><p>{dashboard.stats.totalBookings}</p></div>
+        <div className="surface"><h3>Total Leads</h3><p>{dashboard.leadSummary.totalLeads}</p></div>
+        <div className="surface"><h3>Converted</h3><p>{dashboard.leadSummary.convertedLeads}</p></div>
+        <div className="surface"><h3>Bookings This Week</h3><p>{dashboard.impact.bookingsThisWeek}</p></div>
+        <div className="surface"><h3>Conversion Rate</h3><p>{dashboard.impact.conversionRateLabel}</p></div>
       </div>
       <input className="search-input" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
       <div className="surface table-container">

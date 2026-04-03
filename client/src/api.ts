@@ -31,7 +31,31 @@ async function requestJson<T>(path: string, options: JsonOptions = {}): Promise<
   });
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    const payload = (await response.json().catch(() => null)) as { 
+      error?: string;
+      issues?: { 
+        fieldErrors?: Record<string, string[]>;
+        formErrors?: string[];
+      } 
+    } | null;
+
+    if (payload?.issues) {
+      const parts: string[] = [];
+      if (payload.issues.formErrors?.length) {
+        parts.push(...payload.issues.formErrors);
+      }
+      if (payload.issues.fieldErrors) {
+        Object.entries(payload.issues.fieldErrors).forEach(([field, errs]) => {
+          if (errs && errs.length) {
+            parts.push(`${field}: ${errs.join(', ')}`);
+          }
+        });
+      }
+      if (parts.length > 0) {
+        throw new Error(`Validation failed: ${parts.join('; ')}`);
+      }
+    }
+
     throw new Error(payload?.error ?? `Request failed with status ${response.status}`);
   }
 
