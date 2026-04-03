@@ -72,7 +72,6 @@ export const businessIdentitySchema = z.object({
   services: z.array(z.string()),
   settings: businessSettingsSchema,
   bookingLink: z.string(),
-  leadLink: z.string(),
   adminLink: z.string(),
 });
 
@@ -85,7 +84,6 @@ export const businessCreateResultSchema = z.object({
   business: businessIdentitySchema,
   generatedPasscode: z.string(),
   bookingLink: z.string(),
-  leadLink: z.string(),
   adminLink: z.string(),
 });
 

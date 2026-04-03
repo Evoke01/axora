@@ -134,7 +134,6 @@ export class BookingService {
       business: identity,
       generatedPasscode,
       bookingLink: identity.bookingLink,
-      leadLink: identity.leadLink,
       adminLink: identity.adminLink,
     };
   }
@@ -331,8 +330,7 @@ export class BookingService {
       supportEmail: business.supportEmail,
       services: [...business.settings.services],
       settings: business.settings,
-      bookingLink: `${baseUrl}/book/${business.slug}`,
-      leadLink: `${baseUrl}/lead/${business.slug}`,
+      bookingLink: `${baseUrl}/${business.slug}`,
       adminLink: `${baseUrl}/admin/${business.slug}`,
     };
   }

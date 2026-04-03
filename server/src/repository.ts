@@ -112,7 +112,6 @@ function mapBusiness(row: BusinessRow): Business {
     supportEmail: row.support_email,
     settings: parseSettings(row.settings_json),
     bookingLink: "",
-    leadLink: "",
     adminLink: "",
     services: parseSettings(row.settings_json).services,
     createdAt: row.created_at.toISOString(),
