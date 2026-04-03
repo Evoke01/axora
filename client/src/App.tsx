@@ -267,13 +267,20 @@ function AdminPage() {
 
   if (!dashboard) {
     return (
-      <main className="page page-narrow">
-        <form className="launch-form" onSubmit={handleLogin}>
-          <h1>Admin Login</h1>
-          <label>Passcode<input type="password" value={passcode} onChange={(e) => setPasscode(e.target.value)} required /></label>
-          <button className="button primary" type="submit">Enter Dashboard</button>
-          {error && <p className="feedback error">{error}</p>}
-        </form>
+      <main className="dashboard-page" style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "80vh" }}>
+        <div className="surface" style={{ width: "100%", maxWidth: 420, padding: 40, border: "1px solid var(--border-md)", background: "rgba(255,255,255,0.02)" }}>
+          <h1 style={{ textAlign: "center", marginBottom: 32, fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em" }}>Admin Login</h1>
+          <form className="launch-form" onSubmit={handleLogin}>
+            <label>
+              Passcode
+              <input type="password" value={passcode} onChange={(e) => setPasscode(e.target.value)} required placeholder="Enter admin passcode" />
+            </label>
+            <button className="submit-button" type="submit" disabled={loading}>
+              {loading ? "Verifying..." : "Enter Dashboard"}
+            </button>
+            {error && <p className="feedback error" style={{ textAlign: "center" }}>{error}</p>}
+          </form>
+        </div>
       </main>
     );
   }
@@ -285,31 +292,102 @@ function AdminPage() {
   }
 
   return (
-    <main className="page">
-      <header className="admin-header">
-        <h1>{config?.business.name} Admin</h1>
-        <button className="button ghost" onClick={handleLogout}>Logout</button>
+    <main className="dashboard-page">
+      <header className="dashboard-top">
+        <div>
+          <h1>{config?.business.name} Admin</h1>
+          <p className="lede">Manage your leads, bookings, and automated interactions.</p>
+        </div>
+        <div className="toolbar">
+          <button onClick={handleLogout}>Sign Out</button>
+        </div>
       </header>
-      <div className="metrics-grid">
-        <div className="surface"><h3>Total Leads</h3><p>{dashboard.leadSummary.totalLeads}</p></div>
-        <div className="surface"><h3>Converted</h3><p>{dashboard.leadSummary.convertedLeads}</p></div>
-        <div className="surface"><h3>Bookings This Week</h3><p>{dashboard.impact.bookingsThisWeek}</p></div>
-        <div className="surface"><h3>Conversion Rate</h3><p>{dashboard.impact.conversionRateLabel}</p></div>
+
+      <div className="metrics metrics-four">
+        <div className="metric-card">
+          <span>Total Leads</span>
+          <strong>{dashboard.leadSummary.totalLeads}</strong>
+        </div>
+        <div className="metric-card">
+          <span>Converted</span>
+          <strong>{dashboard.leadSummary.convertedLeads}</strong>
+        </div>
+        <div className="metric-card">
+          <span>Bookings (Week)</span>
+          <strong>{dashboard.impact.bookingsThisWeek}</strong>
+        </div>
+        <div className="metric-card">
+          <span>Conversion Rate</span>
+          <strong>{dashboard.impact.conversionRateLabel}</strong>
+        </div>
       </div>
-      <input className="search-input" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
-      <div className="surface table-container">
-        <table>
-          <thead><tr><th>Name</th><th>Service</th><th>Status</th></tr></thead>
-          <tbody>
-            {filteredBookings.map(b => (
-              <tr key={b.id}>
-                <td>{b.name}</td>
-                <td>{b.service}</td>
-                <td>{b.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+      <div className="dashboard-grid">
+        <div className="main-rail">
+          <div className="surface">
+            <div className="surface-header">
+              <h2>Recent Bookings</h2>
+              <input className="search-input" placeholder="Search bookings..." value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Client Name</th>
+                    <th>Service Scheduled</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredBookings.length === 0 ? (
+                    <tr><td colSpan={3} style={{ textAlign: "center", padding: "40px" }}>No bookings found.</td></tr>
+                  ) : (filteredBookings.map(b => (
+                    <tr key={b.id}>
+                      <td><strong>{b.name}</strong><span>{b.email}</span></td>
+                      <td><strong>{b.service}</strong><span>{new Date(b.scheduledAt).toLocaleString()}</span></td>
+                      <td>
+                         <span className={`status-pill status-${b.status.replace("_", "-")}`}>
+                           {b.status.replace("_", " ")}
+                         </span>
+                      </td>
+                    </tr>
+                  )))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className="side-rail">
+          <div className="surface">
+            <div className="surface-header compact">
+              <h2>Quick Links</h2>
+            </div>
+            <div>
+              <LinkField label="Booking Page" value={`${window.location.origin}/book/${businessSlug}`} />
+              <LinkField label="Lead Capture" value={`${window.location.origin}/lead/${businessSlug}`} />
+            </div>
+          </div>
+
+          <div className="surface">
+            <div className="surface-header compact">
+              <h2>Recent Leads</h2>
+            </div>
+            <ul className="activity-list">
+              {dashboard.leads.slice(0, 5).length === 0 ? (
+                <li style={{ textAlign: "center", padding: "30px 20px" }}><p>No recent leads.</p></li>
+              ) : dashboard.leads.slice(0, 5).map(lead => (
+                <li key={lead.id}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                     <strong>{lead.name}</strong>
+                     <span className={`status-pill status-${lead.status}`}>{lead.status}</span>
+                  </div>
+                  <p>{lead.email} &middot; {lead.phone}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
     </main>
   );
