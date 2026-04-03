@@ -371,18 +371,19 @@ function AdminPage() {
 
           <div className="surface">
             <div className="surface-header compact">
-              <h2>Recent Leads</h2>
+              <h2>Recent Activity</h2>
             </div>
             <ul className="activity-list">
-              {dashboard.leads.slice(0, 5).length === 0 ? (
-                <li style={{ textAlign: "center", padding: "30px 20px" }}><p>No recent leads.</p></li>
-              ) : dashboard.leads.slice(0, 5).map(lead => (
-                <li key={lead.id}>
+              {dashboard.activity.length === 0 ? (
+                <li style={{ textAlign: "center", padding: "30px 20px" }}><p>No recent activity.</p></li>
+              ) : dashboard.activity.slice(0, 5).map((log: any) => (
+                <li key={log.id}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                     <strong>{lead.name}</strong>
-                     <span className={`status-pill status-${lead.status}`}>{lead.status}</span>
+                     <strong>{log.kind.replace("_", " ")} email</strong>
+                     <span className={`status-pill status-${log.status}`}>{log.status}</span>
                   </div>
-                  <p>{lead.email} &middot; {lead.phone}</p>
+                  <p>Sent to {log.toEmail}</p>
+                  {log.error && <p style={{ color: "var(--status-failed)" }}>{log.error}</p>}
                 </li>
               ))}
             </ul>
