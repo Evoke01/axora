@@ -10,13 +10,17 @@ import type {
   PublicConfig,
 } from "@business-automation/shared";
 
+const API = import.meta.env.VITE_API_URL ?? "";
+
 type JsonOptions = RequestInit & {
   jsonBody?: unknown;
 };
 
 async function requestJson<T>(path: string, options: JsonOptions = {}): Promise<T> {
   const { jsonBody, ...requestOptions } = options;
-  const response = await fetch(path, {
+  
+  // Apply the API prefix here
+  const response = await fetch(`${API}${path}`, {
     ...requestOptions,
     credentials: "include",
     headers: {
