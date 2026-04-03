@@ -10,6 +10,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "start": "serve -s dist -l $PORT",
     "test": "vitest run"
   },
   "dependencies": {
@@ -18,7 +19,8 @@
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.9.5",
     "vite": "^8.0.1",
-    "@vitejs/plugin-react": "^6.0.1"
+    "@vitejs/plugin-react": "^6.0.1",
+    "serve": "^14.2.4"
   },
   "devDependencies": {
     "@types/node": "^24.12.0",
