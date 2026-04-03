@@ -321,7 +321,7 @@ export class BookingService {
   }
 
   private toBusinessIdentity(business: Business): BusinessIdentity {
-    const baseUrl = this.appConfig.APP_BASE_URL.replace(/\/$/, "");
+    const baseUrl = this.appConfig.CLIENT_ORIGIN.replace(/\/$/, "");
     return {
       id: business.id,
       name: business.name,
