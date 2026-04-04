@@ -1,13 +1,25 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    tailwindcss(),
+  ],
   resolve: {
     alias: {
-      // This maps the package name to the actual physical folder
-      '@business-automation/shared': path.resolve(__dirname, '../shared/src') 
-    }
-  }
+      '@': path.resolve(__dirname, './src'),
+      '@business-automation/shared': path.resolve(__dirname, '../shared/src'),
+    },
+  },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      },
+    },
+  },
 })

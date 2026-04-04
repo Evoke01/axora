@@ -20,13 +20,9 @@ import {
   logout,
   updateBookingStatus,
 } from "./api";
+import { HeroGeometric } from "@/components/ui/shape-landing-hero";
 
 /* ─── Helpers ─────────────────────────────────── */
-function toLocalDateTimeInput(date: Date) {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 16);
-}
-
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
@@ -138,22 +134,20 @@ function LandingPage() {
   return (
     <>
       <DemoModal open={demoOpen} onClose={() => setDemoOpen(false)} />
-      <section className="lp-hero">
-        <div className="lp-hero-glow" />
-        <div className="lp-hero-content">
-          <div className="lp-badge"><div className="lp-badge-dot" /><span>Business Automation</span></div>
-          <h1 className="lp-h1">
-            <span className="lp-h1-1">Automate your</span>
-            <span className="lp-h1-2">business operations.</span>
-          </h1>
-          <p className="lp-hero-desc">Leads, payments, and reports handled automatically. No manual follow-ups. No messy spreadsheets.</p>
-          <div className="lp-hero-btns">
-            <Link to="/start" className="lp-btn-primary">Get started</Link>
-            <button className="lp-btn-outline" onClick={() => setDemoOpen(true)}>Book a demo →</button>
-          </div>
-        </div>
-      </section>
 
+      {/* ── NEW ANIMATED HERO ── */}
+      <HeroGeometric
+        badge="Business Automation"
+        title1="Automate your"
+        title2="business operations."
+        description="Leads, payments, and reports handled automatically. No manual follow-ups. No messy spreadsheets."
+        onGetStarted={() => { window.location.href = "/start"; }}
+        onBookDemo={() => setDemoOpen(true)}
+      />
+
+      <hr className="lp-hr" />
+
+      {/* ── WHAT WE DO ── */}
       <div id="what" className="lp-section">
         <div className="lp-section-label">What we do</div>
         <div className="lp-what-grid">
@@ -172,6 +166,50 @@ function LandingPage() {
         </div>
       </div>
 
+      {/* ── HOW IT WORKS ── */}
+      <div id="how" className="lp-how-wrap">
+        <div className="lp-how-glow" />
+        <div className="lp-section" style={{ paddingTop: 80, paddingBottom: 80 }}>
+          <div ref={rHow} className="lp-section-label lp-reveal">How it works</div>
+          <div className="lp-steps">
+            <div ref={rS1} className="lp-step lp-reveal">
+              <div className="lp-step-n">1</div><span className="lp-step-tag">Step one</span>
+              <div className="lp-step-title">Capture</div>
+              <p className="lp-step-desc">A lead fills a form, makes an inquiry, or data enters your system from any source.</p>
+            </div>
+            <div ref={rS2} className="lp-step lp-reveal" style={{ transitionDelay: "0.1s" }}>
+              <div className="lp-step-n">2</div><span className="lp-step-tag">Step two</span>
+              <div className="lp-step-title">Automate</div>
+              <p className="lp-step-desc">Actions trigger instantly. No waiting, no manual steps, no one needs to be watching.</p>
+            </div>
+            <div ref={rS3} className="lp-step lp-reveal" style={{ transitionDelay: "0.2s" }}>
+              <div className="lp-step-n">3</div><span className="lp-step-tag">Step three</span>
+              <div className="lp-step-title">Output</div>
+              <p className="lp-step-desc">Messages sent, records updated, reports delivered. Everything handled automatically.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── FEATURES ── */}
+      <div className="lp-section">
+        <div className="lp-section-label">Features</div>
+        <div ref={rFeats} className="lp-reveal lp-feats-wrap">
+          <div className="lp-feats">
+            {FEATS.map((f) => (
+              <div key={f.name} className="lp-feat">
+                <div className="lp-feat-icon"><FeatIcon id={f.icon} /></div>
+                <div className="lp-feat-name">{f.name}</div>
+                <p className="lp-feat-desc">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <hr className="lp-hr" />
+
+      {/* ── PRICING ── */}
       <div id="pricing" className="lp-section">
         <div className="lp-section-label">Pricing</div>
         <div ref={rPrice} className="lp-reveal lp-plans">
@@ -185,6 +223,23 @@ function LandingPage() {
               <Link to="/start" className="lp-plan-btn">Choose {plan.label}</Link>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* ── CTA ── */}
+      <div className="lp-cta">
+        <div className="lp-cta-glow" />
+        <div className="lp-shape lp-cs1" /><div className="lp-shape lp-cs2" />
+        <div ref={rCta} className="lp-reveal" style={{ position: "relative", zIndex: 2 }}>
+          <div className="lp-cta-h">
+            <span className="lp-cta-l1">Stop doing</span>
+            <span className="lp-cta-l2">repetitive work.</span>
+          </div>
+          <p className="lp-cta-sub">Start automating today. Your first workflow is live in 24 hours.</p>
+          <div className="lp-hero-btns">
+            <button className="lp-btn-primary" onClick={() => setDemoOpen(true)}>Book a Demo</button>
+            <Link to="/pricing" className="lp-btn-outline">See all features →</Link>
+          </div>
         </div>
       </div>
     </>
@@ -237,7 +292,7 @@ function StartPage() {
 /* ─── AdminPage ───────────────────────────────── */
 function AdminPage() {
   const { businessSlug } = useParams();
-  const { config, loading: configLoading } = useBusinessConfig(businessSlug);
+  const { config } = useBusinessConfig(businessSlug);
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [passcode, setPasscode] = useState("");
@@ -248,9 +303,9 @@ function AdminPage() {
   async function handleLogin(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); if (!businessSlug) return;
     setLoading(true);
-    try { 
-      await login(businessSlug, passcode); 
-      setDashboard(await fetchDashboard(businessSlug)); 
+    try {
+      await login(businessSlug, passcode);
+      setDashboard(await fetchDashboard(businessSlug));
     }
     catch (err) { setError(err instanceof Error ? err.message : "Login failed."); }
     finally { setLoading(false); }
@@ -260,8 +315,6 @@ function AdminPage() {
     if (!dashboard) return [];
     return dashboard.bookings.filter(b => b.name.toLowerCase().includes(deferredSearch.toLowerCase()));
   }, [dashboard, deferredSearch]);
-
-  if (configLoading) return <LoadingPanel label="Loading..." />;
 
   if (!dashboard) {
     return (
@@ -285,8 +338,7 @@ function AdminPage() {
 
   async function handleLogout() {
     if (businessSlug) await logout(businessSlug);
-    setDashboard(null);
-    setPasscode("");
+    setDashboard(null); setPasscode("");
   }
 
   return (
@@ -302,22 +354,10 @@ function AdminPage() {
       </header>
 
       <div className="metrics metrics-four">
-        <div className="metric-card">
-          <span>Total Leads</span>
-          <strong>{dashboard.leadSummary.totalLeads}</strong>
-        </div>
-        <div className="metric-card">
-          <span>Converted</span>
-          <strong>{dashboard.leadSummary.convertedLeads}</strong>
-        </div>
-        <div className="metric-card">
-          <span>Bookings (Week)</span>
-          <strong>{dashboard.impact.bookingsThisWeek}</strong>
-        </div>
-        <div className="metric-card">
-          <span>Conversion Rate</span>
-          <strong>{dashboard.impact.conversionRateLabel}</strong>
-        </div>
+        <div className="metric-card"><span>Total Leads</span><strong>{dashboard.leadSummary.totalLeads}</strong></div>
+        <div className="metric-card"><span>Converted</span><strong>{dashboard.leadSummary.convertedLeads}</strong></div>
+        <div className="metric-card"><span>Bookings (Week)</span><strong>{dashboard.impact.bookingsThisWeek}</strong></div>
+        <div className="metric-card"><span>Conversion Rate</span><strong>{dashboard.impact.conversionRateLabel}</strong></div>
       </div>
 
       <div className="dashboard-grid">
@@ -329,27 +369,17 @@ function AdminPage() {
             </div>
             <div className="table-wrap">
               <table>
-                <thead>
-                  <tr>
-                    <th>Client Name</th>
-                    <th>Service Scheduled</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
+                <thead><tr><th>Client</th><th>Service</th><th>Status</th></tr></thead>
                 <tbody>
                   {filteredBookings.length === 0 ? (
                     <tr><td colSpan={3} style={{ textAlign: "center", padding: "40px" }}>No bookings found.</td></tr>
-                  ) : (filteredBookings.map(b => (
+                  ) : filteredBookings.map(b => (
                     <tr key={b.id}>
                       <td><strong>{b.name}</strong><span>{b.email}</span></td>
                       <td><strong>{b.service}</strong><span>{new Date(b.scheduledAt).toLocaleString()}</span></td>
-                      <td>
-                         <span className={`status-pill status-${b.status.replace("_", "-")}`}>
-                           {b.status.replace("_", " ")}
-                         </span>
-                      </td>
+                      <td><span className={`status-pill status-${b.status.replace("_", "-")}`}>{b.status.replace("_", " ")}</span></td>
                     </tr>
-                  )))}
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -358,30 +388,21 @@ function AdminPage() {
 
         <div className="side-rail">
           <div className="surface">
-            <div className="surface-header compact">
-              <h2>Quick Links</h2>
-            </div>
-            <div>
-              <LinkField label="Booking Page" value={`${window.location.origin}/book/${businessSlug}`} />
-              <LinkField label="Lead Capture" value={`${window.location.origin}/lead/${businessSlug}`} />
-            </div>
+            <div className="surface-header compact"><h2>Quick Links</h2></div>
+            <LinkField label="Booking Page" value={`${window.location.origin}/${businessSlug}`} />
           </div>
-
           <div className="surface">
-            <div className="surface-header compact">
-              <h2>Recent Activity</h2>
-            </div>
+            <div className="surface-header compact"><h2>Recent Activity</h2></div>
             <ul className="activity-list">
               {dashboard.activity.length === 0 ? (
                 <li style={{ textAlign: "center", padding: "30px 20px" }}><p>No recent activity.</p></li>
               ) : dashboard.activity.slice(0, 5).map((log: any) => (
                 <li key={log.id}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                     <strong>{log.kind.replace("_", " ")} email</strong>
-                     <span className={`status-pill status-${log.status}`}>{log.status}</span>
+                    <strong>{log.kind.replace("_", " ")} email</strong>
+                    <span className={`status-pill status-${log.status}`}>{log.status}</span>
                   </div>
                   <p>Sent to {log.toEmail}</p>
-                  {log.error && <p style={{ color: "var(--status-failed)" }}>{log.error}</p>}
                 </li>
               ))}
             </ul>
@@ -390,32 +411,6 @@ function AdminPage() {
       </div>
     </main>
   );
-}
-
-/* ─── Shared Components & Custom Hooks ───────── */
-function LinkField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="link-field" style={{ marginBottom: 15 }}>
-      <strong>{label}:</strong>
-      <div style={{ display: "flex", gap: 8 }}>
-        <input readOnly value={value} style={{ flex: 1 }} />
-        <button onClick={() => navigator.clipboard.writeText(value)}>Copy</button>
-      </div>
-    </div>
-  );
-}
-
-function LoadingPanel({ label }: { label: string }) {
-  return <div className="state-panel"><p>{label}</p></div>;
-}
-
-function useBusinessConfig(slug: string | undefined) {
-  const [config, setConfig] = useState<PublicConfig | null>(null);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    if (slug) fetchPublicConfig(slug).then(setConfig).finally(() => setLoading(false));
-  }, [slug]);
-  return { config, loading };
 }
 
 /* ─── BookingPage ─────────────────────────────── */
@@ -434,32 +429,26 @@ function BookingPage() {
   }, [config, form.service]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!businessSlug) return;
+    e.preventDefault(); if (!businessSlug) return;
     setSubmitting(true); setError(null);
     try {
       await createBooking(businessSlug, { ...form, scheduledAt: new Date(form.scheduledAt).toISOString() });
       setSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not book.");
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   }
 
   if (loading) return <LoadingPanel label="Loading..." />;
   if (!config) return <main className="page page-narrow"><p>Business not found.</p></main>;
-
-  if (success) {
-    return (
-      <main className="page page-narrow">
-        <section className="page-header">
-          <h1>Booking confirmed!</h1>
-          <p className="lede">You'll receive a confirmation email shortly from {config.business.name}.</p>
-        </section>
-      </main>
-    );
-  }
+  if (success) return (
+    <main className="page page-narrow">
+      <section className="page-header">
+        <h1>Booking confirmed!</h1>
+        <p className="lede">You'll receive a confirmation email shortly from {config.business.name}.</p>
+      </section>
+    </main>
+  );
 
   return (
     <main className="page page-narrow">
@@ -484,11 +473,44 @@ function BookingPage() {
   );
 }
 
+/* ─── Shared helpers ──────────────────────────── */
+function LinkField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="link-field" style={{ marginBottom: 15 }}>
+      <strong>{label}:</strong>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input readOnly value={value} style={{ flex: 1 }} />
+        <button onClick={() => navigator.clipboard.writeText(value)}>Copy</button>
+      </div>
+    </div>
+  );
+}
+
+function LoadingPanel({ label }: { label: string }) {
+  return <div style={{ padding: 48, textAlign: "center", color: "rgba(255,255,255,0.4)" }}><p>{label}</p></div>;
+}
+
+function useBusinessConfig(slug: string | undefined) {
+  const [config, setConfig] = useState<PublicConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    if (slug) fetchPublicConfig(slug).then(setConfig).finally(() => setLoading(false));
+  }, [slug]);
+  return { config, loading };
+}
+
 /* ─── App Shell ──────────────────────────────── */
 export default function App() {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const h = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", h);
+    return () => window.removeEventListener("scroll", h);
+  }, []);
+
   return (
     <div className="shell">
-      <header className="masthead">
+      <header className={`masthead${scrolled ? " scrolled" : ""}`}>
         <Link to="/" className="brand"><strong>Axora</strong></Link>
         <nav className="nav">
           <NavLink to="/">Overview</NavLink>
