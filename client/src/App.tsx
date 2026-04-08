@@ -1,9 +1,9 @@
 import { Link, NavLink, Route, Routes } from "react-router-dom";
 import { AdminPage } from "./routes/AdminPage";
 import { LandingPage } from "./routes/LandingPage";
+import { SitePreviewPage } from "./routes/SitePreviewPage";
 import { StartPage } from "./routes/StartPage";
-
-const WEBSITE_ORIGIN = import.meta.env.VITE_WEBSITE_URL ?? "http://localhost:3000";
+import { getPublicWebsiteOrigin } from "./lib/site";
 
 function NotFoundPage() {
   return (
@@ -18,6 +18,8 @@ function NotFoundPage() {
 }
 
 export default function App() {
+  const websiteOrigin = getPublicWebsiteOrigin();
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -27,7 +29,7 @@ export default function App() {
         <nav>
           <NavLink to="/">Overview</NavLink>
           <NavLink to="/start">Get Started</NavLink>
-          <a href={WEBSITE_ORIGIN} target="_blank" rel="noreferrer">
+          <a href={websiteOrigin} target="_blank" rel="noreferrer">
             Website app
           </a>
         </nav>
@@ -36,6 +38,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/start" element={<StartPage />} />
         <Route path="/admin/:businessSlug" element={<AdminPage />} />
+        <Route path="/preview/:businessSlug/*" element={<SitePreviewPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </div>

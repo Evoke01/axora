@@ -24,7 +24,7 @@ import {
 } from "../api";
 import { InfoCard } from "../components/InfoCard";
 import { MetricCard } from "../components/MetricCard";
-import { buildPreviewUrl, formatDate, toBase64 } from "../lib/site";
+import { buildAdminUrl, buildPreviewUrl, buildPublicBookingUrl, buildPublicPreviewBaseUrl, formatDate, toBase64 } from "../lib/site";
 
 function themeDefaultsForPreset(preset: ThemePreset) {
   const defaults = {
@@ -135,7 +135,7 @@ export function AdminPage() {
     if (!siteEditor) {
       return "";
     }
-    const base = previewState === "draft" ? siteEditor.preview.draftPreviewUrl : siteEditor.preview.publishedPreviewUrl;
+    const base = buildPublicPreviewBaseUrl(siteEditor.business.slug);
     return buildPreviewUrl(base, previewPage, previewState);
   }, [previewPage, previewState, siteEditor]);
 
@@ -360,9 +360,9 @@ export function AdminPage() {
                 <h2>Go live</h2>
               </div>
             </div>
-            <InfoCard title="Preview site" value={dashboard.business.previewSiteUrl} compact />
-            <InfoCard title="Booking link" value={dashboard.business.bookingLink} compact />
-            <InfoCard title="Admin route" value={dashboard.business.adminLink} compact />
+            <InfoCard title="Preview site" value={buildPublicPreviewBaseUrl(dashboard.business.slug)} compact />
+            <InfoCard title="Booking link" value={buildPublicBookingUrl(dashboard.business.slug)} compact />
+            <InfoCard title="Admin route" value={buildAdminUrl(dashboard.business.slug)} compact />
           </div>
 
           <div className="editor-card">
@@ -500,7 +500,7 @@ export function AdminPage() {
           <div className="editor-card">
             <p className="eyebrow">Preview domain</p>
             <h2>System-generated preview</h2>
-            <InfoCard title="Preview URL" value={dashboard.business.previewSiteUrl} compact />
+            <InfoCard title="Preview URL" value={buildPublicPreviewBaseUrl(dashboard.business.slug)} compact />
             <p>The preview site is the fastest way to review theme and page changes before the custom domain is connected.</p>
           </div>
 

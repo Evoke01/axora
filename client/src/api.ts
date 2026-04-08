@@ -8,6 +8,7 @@ import type {
   Lead,
   LeadInput,
   PublicConfig,
+  ResolvedWebsite,
   SiteEditorPayload,
   WebsiteAssetUploadInput,
   WebsiteAssetUploadResult,
@@ -83,6 +84,11 @@ export function createBusiness(input: BusinessCreateInput) {
 
 export function fetchPublicConfig(businessSlug: string) {
   return requestJson<PublicConfig>(`/api/public-config/${businessSlug}`);
+}
+
+export function fetchResolvedSiteBySlug(businessSlug: string, state: "draft" | "published" = "published") {
+  const search = new URLSearchParams({ slug: businessSlug, state });
+  return requestJson<ResolvedWebsite>(`/api/sites/resolve?${search.toString()}`);
 }
 
 export function createLead(businessSlug: string, input: LeadInput) {

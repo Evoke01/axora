@@ -2,12 +2,21 @@ import type { BusinessCreateResult, BusinessType } from "@business-automation/sh
 import { useState, type FormEvent } from "react";
 import { createBusiness } from "../api";
 import { InfoCard } from "../components/InfoCard";
+import { buildAdminUrl, buildPublicBookingUrl, buildPublicPreviewBaseUrl } from "../lib/site";
 
 export function StartPage() {
   const [form, setForm] = useState({ name: "", type: "salon" as BusinessType });
   const [result, setResult] = useState<BusinessCreateResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const publicLinks = result
+    ? {
+        preview: buildPublicPreviewBaseUrl(result.business.slug),
+        booking: buildPublicBookingUrl(result.business.slug),
+        admin: buildAdminUrl(result.business.slug),
+      }
+    : null;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -33,9 +42,9 @@ export function StartPage() {
           </p>
         </section>
         <div className="result-grid">
-          <InfoCard title="Preview website" value={result.previewSiteUrl} />
-          <InfoCard title="Booking route" value={result.bookingLink} />
-          <InfoCard title="Admin route" value={result.adminLink} />
+          <InfoCard title="Preview website" value={publicLinks?.preview ?? result.previewSiteUrl} />
+          <InfoCard title="Booking route" value={publicLinks?.booking ?? result.bookingLink} />
+          <InfoCard title="Admin route" value={publicLinks?.admin ?? result.adminLink} />
           <InfoCard title="Admin passcode" value={result.generatedPasscode} />
           <InfoCard title="Theme preset" value={result.themeKey} />
         </div>

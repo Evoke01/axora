@@ -564,3 +564,352 @@ td span {
     grid-template-columns: 1fr;
   }
 }
+
+.site-root {
+  --site-bg: #0d1320;
+  --site-surface: rgba(255, 255, 255, 0.08);
+  --site-text: #f8fbff;
+  --site-muted: #c6d0de;
+  --site-accent: #7dd3fc;
+  --site-border: rgba(255, 255, 255, 0.14);
+  --site-card: rgba(255, 255, 255, 0.06);
+  --site-radius: 26px;
+  position: relative;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--site-accent) 18%, transparent), transparent 32%),
+    var(--site-bg);
+  color: var(--site-text);
+  font-family: var(--font-body), sans-serif;
+}
+
+.site-root *,
+.site-root *::before,
+.site-root *::after {
+  box-sizing: border-box;
+}
+
+.site-root a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-root img {
+  max-width: 100%;
+  display: block;
+}
+
+.site-root button,
+.site-root input,
+.site-root select,
+.site-root textarea {
+  font: inherit;
+}
+
+.site-backdrop {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 30%);
+  pointer-events: none;
+}
+
+.site-header,
+.site-main,
+.page-layout,
+.site-section,
+.section-grid-cards,
+.section-media-strip,
+.widget-form,
+.lead-form,
+.hero-buttons,
+.site-nav {
+  display: grid;
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.4rem;
+  backdrop-filter: blur(18px);
+  background: rgba(6, 10, 18, 0.72);
+  border-bottom: 1px solid var(--site-border);
+}
+
+.site-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.site-brand span {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--site-accent);
+  color: #021018;
+  font-weight: 800;
+}
+
+.site-brand strong {
+  font-family: var(--font-heading), sans-serif;
+  font-size: 1.05rem;
+}
+
+.site-brand small {
+  display: block;
+  opacity: 0.72;
+}
+
+.site-nav {
+  grid-auto-flow: column;
+  justify-content: end;
+  align-items: center;
+  gap: 1rem;
+}
+
+.site-nav a {
+  opacity: 0.78;
+}
+
+.nav-cta,
+.site-button,
+.widget-form button,
+.lead-form button,
+.sticky-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.82rem 1.2rem;
+}
+
+.nav-cta,
+.site-button.primary,
+.widget-form button,
+.lead-form button,
+.sticky-cta {
+  background: var(--site-accent);
+  color: #021018;
+  font-weight: 800;
+}
+
+.site-button.ghost {
+  border: 1px solid var(--site-border);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.site-main {
+  width: min(1200px, calc(100vw - 2rem));
+  margin: 0 auto;
+  gap: 2rem;
+  padding: 1.4rem 0 4rem;
+}
+
+.site-hero {
+  display: grid;
+  gap: 1rem;
+  border-radius: var(--site-radius);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--site-surface) 90%, transparent);
+  border: 1px solid var(--site-border);
+}
+
+.hero-editorial {
+  grid-template-columns: 1.15fr 0.85fr;
+}
+
+.hero-performance {
+  grid-template-columns: 0.95fr 1.05fr;
+}
+
+.hero-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  min-height: 520px;
+}
+
+.hero-content {
+  padding: clamp(1.4rem, 4vw, 3rem);
+  display: grid;
+  align-content: center;
+  gap: 1rem;
+}
+
+.hero-content p:first-child,
+.section-copy span,
+.page-intro p {
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  opacity: 0.74;
+}
+
+.hero-content h1,
+.page-intro h2,
+.section-copy h3,
+.content-card h4,
+.booking-widget h3,
+.lead-form h3 {
+  font-family: var(--font-heading), sans-serif;
+  margin: 0;
+}
+
+.hero-content h1 {
+  font-size: clamp(3rem, 8vw, 6.5rem);
+  line-height: 0.92;
+  max-width: 10ch;
+}
+
+.hero-body,
+.page-intro p:last-child,
+.section-copy p,
+.content-card p,
+.booking-widget span,
+.lead-form p {
+  color: var(--site-muted);
+}
+
+.hero-buttons {
+  grid-auto-flow: column;
+  justify-content: start;
+  gap: 0.8rem;
+}
+
+.page-layout {
+  gap: 1.4rem;
+}
+
+.page-intro {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.page-intro h2 {
+  font-size: clamp(1.7rem, 4vw, 3rem);
+}
+
+.site-section,
+.booking-widget,
+.lead-form {
+  gap: 1rem;
+  border-radius: var(--site-radius);
+  border: 1px solid var(--site-border);
+  background: color-mix(in srgb, var(--site-card) 90%, transparent);
+  padding: 1.4rem;
+}
+
+.section-grid-cards {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.content-card {
+  border-radius: calc(var(--site-radius) - 10px);
+  border: 1px solid var(--site-border);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1rem;
+}
+
+.content-card span,
+.content-card small {
+  display: block;
+  opacity: 0.74;
+  margin-bottom: 0.45rem;
+}
+
+.content-card strong {
+  font-family: var(--font-heading), sans-serif;
+  display: block;
+  margin-top: 0.7rem;
+}
+
+.section-media-strip {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.8rem;
+}
+
+.section-media-strip img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-radius: calc(var(--site-radius) - 12px);
+}
+
+.widget-copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.widget-form,
+.lead-form {
+  gap: 0.8rem;
+}
+
+.site-root .widget-form input,
+.site-root .widget-form select,
+.site-root .lead-form input {
+  border: 1px solid var(--site-border);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: calc(var(--site-radius) - 14px);
+  color: var(--site-text);
+  padding: 0.9rem 1rem;
+}
+
+.widget-success {
+  border-radius: calc(var(--site-radius) - 12px);
+  padding: 1rem;
+  background: rgba(134, 239, 172, 0.12);
+  color: #dff7df;
+}
+
+.widget-error {
+  color: #fecaca;
+}
+
+.sticky-cta {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+@media (min-width: 841px) {
+  .sticky-cta {
+    display: none;
+  }
+}
+
+@media (max-width: 840px) {
+  .site-header,
+  .site-nav,
+  .hero-editorial,
+  .hero-performance {
+    grid-template-columns: 1fr;
+  }
+
+  .site-nav {
+    grid-auto-flow: row;
+    justify-content: start;
+  }
+
+  .site-main {
+    width: min(100vw - 1rem, 100%);
+  }
+
+  .hero-media img {
+    min-height: 340px;
+  }
+
+  .hero-buttons {
+    grid-auto-flow: row;
+  }
+}
