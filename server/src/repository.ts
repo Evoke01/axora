@@ -13,6 +13,12 @@ import {
   type MessageKind,
   type MessageLog,
   type PlanTier,
+  type ThemePreset,
+  type WebsiteConfig,
+  type WebsiteDomain,
+  type WebsiteDraft,
+  type WebsiteSeo,
+  type WebsiteTheme,
 } from "@business-automation/shared";
 import { randomUUID } from "node:crypto";
 import type { DatabaseClient } from "./db.js";
@@ -87,6 +93,30 @@ type MessageRow = {
   created_at: Date;
 };
 
+type WebsiteConfigRow = {
+  id: string;
+  business_id: string;
+  template_key: ThemePreset;
+  draft_json: WebsiteDraft | string;
+  published_json: WebsiteDraft | string;
+  theme_json: WebsiteTheme | string;
+  seo_json: WebsiteSeo | string;
+  publish_version: number;
+  created_at: Date;
+  updated_at: Date;
+};
+
+type WebsiteDomainRow = {
+  id: string;
+  business_id: string;
+  hostname: string;
+  kind: WebsiteDomain["kind"];
+  status: WebsiteDomain["status"];
+  verification_json: WebsiteDomain["verification"] | string;
+  created_at: Date;
+  updated_at: Date;
+};
+
 export type DashboardSnapshot = {
   business: Business;
   leads: Lead[];
@@ -95,14 +125,15 @@ export type DashboardSnapshot = {
   plans: typeof planCatalog;
 };
 
-function parseSettings(value: BusinessSettings | string): BusinessSettings {
+function parseJson<T>(value: T | string): T {
   if (typeof value === "string") {
-    return JSON.parse(value) as BusinessSettings;
+    return JSON.parse(value) as T;
   }
   return value;
 }
 
 function mapBusiness(row: BusinessRow): Business {
+  const settings = parseJson(row.settings_json);
   return {
     id: row.id,
     name: row.name,
@@ -110,10 +141,8 @@ function mapBusiness(row: BusinessRow): Business {
     type: row.type,
     currentPlan: row.current_plan,
     supportEmail: row.support_email,
-    settings: parseSettings(row.settings_json),
-    bookingLink: "",
-    adminLink: "",
-    services: parseSettings(row.settings_json).services,
+    settings,
+    services: settings.services,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
@@ -168,6 +197,34 @@ function mapMessage(row: MessageRow): MessageLog {
   };
 }
 
+function mapWebsiteConfig(row: WebsiteConfigRow): WebsiteConfig {
+  return {
+    id: row.id,
+    businessId: row.business_id,
+    templateKey: row.template_key,
+    theme: parseJson(row.theme_json),
+    seo: parseJson(row.seo_json),
+    draft: parseJson(row.draft_json),
+    published: parseJson(row.published_json),
+    publishVersion: row.publish_version,
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
+  };
+}
+
+function mapWebsiteDomain(row: WebsiteDomainRow): WebsiteDomain {
+  return {
+    id: row.id,
+    businessId: row.business_id,
+    hostname: row.hostname,
+    kind: row.kind,
+    status: row.status,
+    verification: parseJson(row.verification_json),
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
+  };
+}
+
 export class Repository {
   constructor(private readonly db: DatabaseClient) {}
 
@@ -217,7 +274,10 @@ export class Repository {
   }
 
   async slugExists(slug: string) {
-    const result = await this.db.query<{ exists: boolean }>("select exists(select 1 from businesses where slug = $1) as exists", [slug]);
+    const result = await this.db.query<{ exists: boolean }>(
+      "select exists(select 1 from businesses where slug = $1) as exists",
+      [slug],
+    );
     return Boolean(result.rows[0]?.exists);
   }
 
@@ -337,6 +397,162 @@ export class Repository {
     return result.rows.map(mapMessage);
   }
 
+  async createWebsiteConfig(input: {
+    businessId: string;
+    templateKey: ThemePreset;
+    draft: WebsiteDraft;
+    published: WebsiteDraft;
+    theme: WebsiteTheme;
+    seo: WebsiteSeo;
+  }) {
+    const result = await this.db.query<WebsiteConfigRow>(
+      `insert into website_configs (
+         id,
+         business_id,
+         template_key,
+         draft_json,
+         published_json,
+         theme_json,
+         seo_json,
+         publish_version
+       )
+       values ($1, $2, $3, $4::jsonb, $5::jsonb, $6::jsonb, $7::jsonb, 1)
+       returning *`,
+      [
+        randomUUID(),
+        input.businessId,
+        input.templateKey,
+        JSON.stringify(input.draft),
+        JSON.stringify(input.published),
+        JSON.stringify(input.theme),
+        JSON.stringify(input.seo),
+      ],
+    );
+    return mapWebsiteConfig(result.rows[0]);
+  }
+
+  async getWebsiteConfigByBusinessId(businessId: string) {
+    const result = await this.db.query<WebsiteConfigRow>(
+      "select * from website_configs where business_id = $1",
+      [businessId],
+    );
+    return result.rows[0] ? mapWebsiteConfig(result.rows[0]) : null;
+  }
+
+  async updateWebsiteDraft(input: {
+    businessId: string;
+    templateKey: ThemePreset;
+    draft: WebsiteDraft;
+    theme: WebsiteTheme;
+    seo: WebsiteSeo;
+  }) {
+    const result = await this.db.query<WebsiteConfigRow>(
+      `update website_configs
+       set template_key = $2,
+           draft_json = $3::jsonb,
+           theme_json = $4::jsonb,
+           seo_json = $5::jsonb,
+           updated_at = now()
+       where business_id = $1
+       returning *`,
+      [
+        input.businessId,
+        input.templateKey,
+        JSON.stringify(input.draft),
+        JSON.stringify(input.theme),
+        JSON.stringify(input.seo),
+      ],
+    );
+    return result.rows[0] ? mapWebsiteConfig(result.rows[0]) : null;
+  }
+
+  async publishWebsite(businessId: string) {
+    const result = await this.db.query<WebsiteConfigRow>(
+      `update website_configs
+       set published_json = draft_json,
+           publish_version = publish_version + 1,
+           updated_at = now()
+       where business_id = $1
+       returning *`,
+      [businessId],
+    );
+    return result.rows[0] ? mapWebsiteConfig(result.rows[0]) : null;
+  }
+
+  async insertWebsiteDomain(input: {
+    businessId: string;
+    hostname: string;
+    kind: WebsiteDomain["kind"];
+    status: WebsiteDomain["status"];
+    verification: WebsiteDomain["verification"];
+  }) {
+    const result = await this.db.query<WebsiteDomainRow>(
+      `insert into website_domains (id, business_id, hostname, kind, status, verification_json)
+       values ($1, $2, lower($3), $4, $5, $6::jsonb)
+       returning *`,
+      [
+        randomUUID(),
+        input.businessId,
+        input.hostname,
+        input.kind,
+        input.status,
+        JSON.stringify(input.verification),
+      ],
+    );
+    return mapWebsiteDomain(result.rows[0]);
+  }
+
+  async listWebsiteDomains(businessId: string) {
+    const result = await this.db.query<WebsiteDomainRow>(
+      "select * from website_domains where business_id = $1 order by created_at asc",
+      [businessId],
+    );
+    return result.rows.map(mapWebsiteDomain);
+  }
+
+  async getWebsiteDomainById(businessId: string, domainId: string) {
+    const result = await this.db.query<WebsiteDomainRow>(
+      "select * from website_domains where business_id = $1 and id = $2",
+      [businessId, domainId],
+    );
+    return result.rows[0] ? mapWebsiteDomain(result.rows[0]) : null;
+  }
+
+  async getWebsiteDomainByHost(hostname: string) {
+    const normalized = hostname.trim().toLowerCase();
+    const result = await this.db.query<WebsiteDomainRow>(
+      "select * from website_domains where lower(hostname) = $1 order by created_at asc limit 1",
+      [normalized],
+    );
+    return result.rows[0] ? mapWebsiteDomain(result.rows[0]) : null;
+  }
+
+  async updateWebsiteDomainStatus(
+    businessId: string,
+    domainId: string,
+    status: WebsiteDomain["status"],
+    verification: WebsiteDomain["verification"] | null = null,
+  ) {
+    const result = await this.db.query<WebsiteDomainRow>(
+      `update website_domains
+       set status = $3,
+           verification_json = case when $4::jsonb is null then verification_json else $4::jsonb end,
+           updated_at = now()
+       where business_id = $1 and id = $2
+       returning *`,
+      [businessId, domainId, status, verification ? JSON.stringify(verification) : null],
+    );
+    return result.rows[0] ? mapWebsiteDomain(result.rows[0]) : null;
+  }
+
+  async deleteWebsiteDomain(businessId: string, domainId: string) {
+    const result = await this.db.query<{ id: string }>(
+      "delete from website_domains where business_id = $1 and id = $2 returning id",
+      [businessId, domainId],
+    );
+    return Boolean(result.rows[0]);
+  }
+
   async ensurePendingJob(
     businessId: string,
     bookingId: string,
@@ -361,7 +577,9 @@ export class Repository {
   }
 
   async getNextPendingJob() {
-    const result = await this.db.query<PendingJob>("select * from jobs where status = 'pending' order by run_at asc limit 1");
+    const result = await this.db.query<PendingJob>(
+      "select * from jobs where status = 'pending' order by run_at asc limit 1",
+    );
     return result.rows[0] ?? null;
   }
 
@@ -393,7 +611,11 @@ export class Repository {
   }
 
   async finishJob(id: string, status: "completed" | "failed" | "skipped", error: string | null = null) {
-    await this.db.query("update jobs set status = $2, last_error = $3, updated_at = now() where id = $1", [id, status, error]);
+    await this.db.query("update jobs set status = $2, last_error = $3, updated_at = now() where id = $1", [
+      id,
+      status,
+      error,
+    ]);
   }
 
   async upsertMessageLog(input: {
@@ -409,7 +631,19 @@ export class Repository {
     error?: string | null;
   }) {
     const result = await this.db.query<MessageRow>(
-      `insert into message_log (id, business_id, booking_id, kind, delivery_mode, status, subject, to_email, sent_at, provider_message_id, error)
+      `insert into message_log (
+         id,
+         business_id,
+         booking_id,
+         kind,
+         delivery_mode,
+         status,
+         subject,
+         to_email,
+         sent_at,
+         provider_message_id,
+         error
+       )
        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        on conflict (booking_id, kind) do update
          set business_id = excluded.business_id,

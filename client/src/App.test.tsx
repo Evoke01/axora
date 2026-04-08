@@ -10,7 +10,7 @@ test("renders the get started onboarding flow", () => {
     </MemoryRouter>,
   );
 
-  expect(screen.getByRole("heading", { name: /create a business, generate the slug/i })).toBeInTheDocument();
-  expect(screen.getByLabelText(/business name/i)).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: /create the business and generate its website/i })).toBeInTheDocument();
+  expect(screen.getByText(/business name/i)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /create business/i })).toBeInTheDocument();
 });

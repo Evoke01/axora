@@ -8,14 +8,20 @@ import type {
   Lead,
   LeadInput,
   PublicConfig,
+  SiteEditorPayload,
+  WebsiteAssetUploadInput,
+  WebsiteAssetUploadResult,
+  WebsiteConfig,
+  WebsiteDomain,
+  WebsitePatch,
 } from "@business-automation/shared";
 
 const API = import.meta.env.VITE_API_URL ?? "";
 
-let _authToken: string | null = null;
+let authToken: string | null = null;
 
 export function setAuthToken(token: string | null) {
-  _authToken = token;
+  authToken = token;
 }
 
 type JsonOptions = RequestInit & {
@@ -24,26 +30,26 @@ type JsonOptions = RequestInit & {
 
 async function requestJson<T>(path: string, options: JsonOptions = {}): Promise<T> {
   const { jsonBody, ...requestOptions } = options;
-  
-  // Apply the API prefix here
   const response = await fetch(`${API}${path}`, {
     ...requestOptions,
     headers: {
       "Content-Type": "application/json",
-      ...(_authToken ? { Authorization: `Bearer ${_authToken}` } : {}),
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(requestOptions.headers ?? {}),
     },
     body: jsonBody === undefined ? requestOptions.body : JSON.stringify(jsonBody),
   });
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { 
-      error?: string;
-      issues?: { 
-        fieldErrors?: Record<string, string[]>;
-        formErrors?: string[];
-      } 
-    } | null;
+    const payload = (await response.json().catch(() => null)) as
+      | {
+          error?: string;
+          issues?: {
+            fieldErrors?: Record<string, string[]>;
+            formErrors?: string[];
+          };
+        }
+      | null;
 
     if (payload?.issues) {
       const parts: string[] = [];
@@ -51,14 +57,14 @@ async function requestJson<T>(path: string, options: JsonOptions = {}): Promise<
         parts.push(...payload.issues.formErrors);
       }
       if (payload.issues.fieldErrors) {
-        Object.entries(payload.issues.fieldErrors).forEach(([field, errs]) => {
-          if (errs && errs.length) {
-            parts.push(`${field}: ${errs.join(', ')}`);
+        Object.entries(payload.issues.fieldErrors).forEach(([field, errors]) => {
+          if (errors?.length) {
+            parts.push(`${field}: ${errors.join(", ")}`);
           }
         });
       }
       if (parts.length > 0) {
-        throw new Error(`Validation failed: ${parts.join('; ')}`);
+        throw new Error(`Validation failed: ${parts.join("; ")}`);
       }
     }
 
@@ -117,5 +123,49 @@ export function updateBookingStatus(businessSlug: string, id: string, status: Bo
   return requestJson<{ booking: Booking }>(`/api/admin/${businessSlug}/bookings/${id}/status`, {
     method: "PATCH",
     jsonBody: { status },
+  });
+}
+
+export function fetchSiteEditor(businessSlug: string) {
+  return requestJson<SiteEditorPayload>(`/api/admin/${businessSlug}/site`);
+}
+
+export function updateSiteEditor(businessSlug: string, patch: WebsitePatch) {
+  return requestJson<{ site: WebsiteConfig }>(`/api/admin/${businessSlug}/site`, {
+    method: "PATCH",
+    jsonBody: patch,
+  });
+}
+
+export function publishSiteEditor(businessSlug: string) {
+  return requestJson<{ site: WebsiteConfig }>(`/api/admin/${businessSlug}/site/publish`, {
+    method: "POST",
+  });
+}
+
+export function uploadSiteAsset(businessSlug: string, input: WebsiteAssetUploadInput) {
+  return requestJson<WebsiteAssetUploadResult>(`/api/admin/${businessSlug}/site/assets`, {
+    method: "POST",
+    jsonBody: input,
+  });
+}
+
+export function addSiteDomain(businessSlug: string, hostname: string) {
+  return requestJson<{ domain: WebsiteDomain }>(`/api/admin/${businessSlug}/domains`, {
+    method: "POST",
+    jsonBody: { hostname },
+  });
+}
+
+export function verifySiteDomain(businessSlug: string, domainId: string) {
+  return requestJson<{ domain: WebsiteDomain }>(`/api/admin/${businessSlug}/domains/verify`, {
+    method: "POST",
+    jsonBody: { domainId },
+  });
+}
+
+export function deleteSiteDomain(businessSlug: string, domainId: string) {
+  return requestJson<{ ok: boolean }>(`/api/admin/${businessSlug}/domains/${domainId}`, {
+    method: "DELETE",
   });
 }

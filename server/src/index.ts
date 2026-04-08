@@ -7,6 +7,7 @@ import { EmailService } from "./email.js";
 import { Repository } from "./repository.js";
 import { Scheduler } from "./scheduler.js";
 import { BookingService } from "./service.js";
+import { VercelDomainProvider } from "./vercel-domains.js";
 import { createApp } from "./app.js";
 
 async function main() {
@@ -19,7 +20,8 @@ async function main() {
 
   const repository = new Repository(pool);
   const emailService = new EmailService(config);
-  const bookingService = new BookingService(repository, emailService, config);
+  const domainProvider = VercelDomainProvider.isConfigured(config) ? new VercelDomainProvider(config) : null;
+  const bookingService = new BookingService(repository, emailService, config, domainProvider);
   const scheduler = new Scheduler(repository, (job) => bookingService.handleJob(job));
   bookingService.attachScheduler(scheduler);
   await bookingService.ensureSeedData();
@@ -30,13 +32,6 @@ async function main() {
 
   if (existsSync(clientDist)) {
     app.use(express.static(clientDist));
-
-    // Marketing site at root
-    app.get("/", (_req, res) => {
-      res.sendFile(resolve(clientDist, "marketing.html"));
-    });
-
-    // React app handles all other non-API routes
     app.get("*", (req, res, next) => {
       if (req.path.startsWith("/api/")) {
         next();

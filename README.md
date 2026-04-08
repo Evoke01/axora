@@ -1,138 +1,166 @@
-# Business Automation MVP
+# Axora
 
-Minimal full-stack business automation core for salons and gyms. This repo is isolated from the existing `New project` repo and is meant to be the reusable system that future wrapper sites sit on top of.
+Axora is a business onboarding, booking automation, and white-label website generator for salons and gyms.
 
-## What it does
+When a business is created, Axora now provisions:
 
-- Public onboarding flow at `/start`
-  - create a business from `name + type`
-  - generate a unique slug
-  - generate a business-specific admin passcode
-  - return lead, booking, and admin links
-- Public funnel routes
-  - `/lead/:businessSlug`
-  - `/book/:businessSlug`
-  - `/admin/:businessSlug`
-- Impact-first dashboard
-  - bookings today
-  - bookings this week
-  - no-shows
-  - conversion rate from leads to bookings
-- Event-based automation
-  - confirmation email on booking
-  - reminder before the visit
-  - follow-up after completion
-  - re-engagement after the configured delay
+- a business slug
+- a business-specific admin passcode
+- a preview website
+- a business-scoped booking flow
+- a website draft with theme, content, pages, SEO, and domain records
+- an admin dashboard with conversion and booking impact metrics
 
-No cron jobs are used. Delayed work is stored in Postgres and executed by one in-process scheduler timer.
+The public website is not the Axora UI with swapped copy. It renders as the customer's own branded salon or gym site from structured website config.
 
-## Stack
+## Architecture
 
-- Frontend: React 19, Vite, React Router
-- Backend: Node.js, Express, TypeScript
-- Database: Supabase Postgres via `pg`
-- Email: Resend in `live` mode, DB-visible mock sends in `demo` mode
-- Tests: Vitest, Testing Library, Supertest, pg-mem
+- `client/`
+  - Axora product shell on React + Vite
+  - landing page
+  - onboarding flow at `/start`
+  - admin CMS at `/admin/:businessSlug`
+- `server/`
+  - Express API
+  - business creation and booking flows
+  - lead and booking storage
+  - delayed reminder/follow-up/re-engagement scheduler
+  - website draft, publish, domain, and site resolve APIs
+- `shared/`
+  - Zod schemas and shared contracts for business, dashboard, and website config
+- `website/`
+  - Next.js public website runtime
+  - preview route for admin review
+  - hostname-based rendering for preview/custom domains
+  - embedded booking widget and lead capture
 
-## Repo layout
+## Routes
 
-- `client/`: landing page, onboarding flow, public lead/booking pages, admin dashboard
-- `server/`: API, scheduler, DB layer, email handling, tests
-- `shared/`: Zod schemas and shared contracts
+### Axora shell
 
-## Local setup
+- `/`
+- `/start`
+- `/admin/:businessSlug`
 
-1. Copy `.env.example` to `.env`.
-2. Set `DATABASE_URL` to a Postgres database.
+### API
+
+- `POST /api/businesses`
+- `GET /api/public-config/:businessSlug`
+- `POST /api/leads/:businessSlug`
+- `POST /api/bookings/:businessSlug`
+- `POST /api/admin/:businessSlug/login`
+- `GET /api/admin/:businessSlug/dashboard`
+- `GET /api/admin/:businessSlug/site`
+- `PATCH /api/admin/:businessSlug/site`
+- `POST /api/admin/:businessSlug/site/publish`
+- `POST /api/admin/:businessSlug/site/assets`
+- `POST /api/admin/:businessSlug/domains`
+- `POST /api/admin/:businessSlug/domains/verify`
+- `DELETE /api/admin/:businessSlug/domains/:domainId`
+- `GET /api/sites/resolve`
+- `GET /api/health`
+
+### Website runtime
+
+- `/:page`
+  - resolved by hostname in production
+- `/book`
+  - full-page booking fallback
+- `/preview/:businessSlug`
+  - draft/published preview route for local dev and admin iframe usage
+  - this is also the default free-tier preview entrypoint on Vercel when wildcard subdomains are not configured
+
+## Local development
+
+1. Copy the env templates you need:
+   - root server env: `.env.example`
+   - Axora shell env: `client/.env.example`
+   - website runtime env: `website/.env.example`
+2. Set `DATABASE_URL` to Postgres or Supabase Postgres.
 3. Install dependencies:
 
 ```bash
 npm install
 ```
 
-4. Start development mode:
+4. Start all workspaces:
 
 ```bash
 npm run dev
 ```
 
-That runs:
+This runs:
 
-- shared package watch
+- shared watcher
 - Express API on `http://localhost:4000`
-- Vite frontend on `http://localhost:5173`
+- Axora shell on `http://localhost:5173`
+- website runtime on `http://localhost:3000`
 
-## Core routes
-
-- Public app:
-  - `/`
-  - `/start`
-  - `/pricing`
-  - `/lead/:businessSlug`
-  - `/book/:businessSlug`
-  - `/admin/:businessSlug`
-- API:
-  - `POST /api/businesses`
-  - `GET /api/public-config/:businessSlug`
-  - `POST /api/leads/:businessSlug`
-  - `POST /api/bookings/:businessSlug`
-  - `POST /api/admin/:businessSlug/login`
-  - `POST /api/admin/:businessSlug/logout`
-  - `GET /api/admin/:businessSlug/dashboard`
-  - `PATCH /api/admin/:businessSlug/bookings/:bookingId/status`
-  - `GET /api/health`
-
-## Free production setup
-
-This repo is configured for a zero-cost MVP stack:
-
-- Hosting: Render Free web service
-- Database: Supabase Free Postgres
-- Email: Resend Free
-
-### Supabase
-
-1. Create a free Supabase project.
-2. Open the database connection settings.
-3. Copy the `Session pooler` connection string.
-4. Use that value as `DATABASE_URL` locally and in Render.
-
-Supabase is used as hosted Postgres only in this phase. There is no Supabase Auth, RLS, or Edge Function usage here.
+## Deployment shape
 
 ### Render
 
-1. Connect this repo to Render.
-2. Use the included `render.yaml` Blueprint or create one free Node web service manually.
-3. Set these env vars:
-   - `DATABASE_URL`
-   - `CLIENT_ORIGIN`
-   - `APP_BASE_URL`
-   - `SESSION_SECRET`
-   - `EMAIL_MODE`
-   - `RESEND_API_KEY`
-   - `RESEND_FROM_EMAIL`
-   - `SUPPORT_EMAIL`
-4. Keep `CLIENT_ORIGIN` and `APP_BASE_URL` pointed at the same Render URL for the single-service deployment.
+Render hosts the Express API and serves the built Axora shell.
 
-Render config in this repo uses:
+- service: `render.yaml`
+- build command:
+  - `npm install && npm run build --workspace shared && npm run build --workspace server && npm run build --workspace client`
+- start command:
+  - `npm run start`
+- health check:
+  - `/api/health`
 
-- build command: `npm install && npm run build`
-- start command: `npm run start`
-- health check: `/api/health`
+Required server envs:
+
+- `DATABASE_URL`
+- `CLIENT_ORIGIN`
+- `WEBSITE_ORIGIN`
+- `PLATFORM_ROOT_DOMAIN`
+- `APP_BASE_URL`
+- `SESSION_SECRET`
+- `EMAIL_MODE`
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
+- `SUPPORT_EMAIL`
+
+Optional upload envs:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_STORAGE_BUCKET`
+- `VERCEL_API_TOKEN`
+- `VERCEL_PROJECT_ID`
+- `VERCEL_TEAM_ID` or `VERCEL_TEAM_SLUG`
+
+### Vercel
+
+Vercel hosts the `website/` workspace as its own Next.js project.
+
+- project root directory:
+  - `website`
+- required envs:
+  - `API_ORIGIN`
+  - `NEXT_PUBLIC_API_URL`
+
+Preview/custom domains should target the website project, not the Render API service.
+
+If you add `VERCEL_API_TOKEN` and `VERCEL_PROJECT_ID` to the Render API service, Axora can also sync custom-domain add, verify, and remove actions against the live Vercel website project instead of only storing the domain locally.
+
+## Free-tier notes
+
+- Render Free is still best-effort for delayed jobs because the scheduler is in-process and the service can sleep.
+- Supabase Free is used as Postgres and optionally Storage.
+- Supabase publishable keys are enough for public client config, but server-side media uploads still require `SUPABASE_SERVICE_ROLE_KEY`.
+- Resend Free is used for email.
+- Vercel can host the website workspace separately from the Axora admin/API stack.
 
 ## Scripts
 
 ```bash
 npm run dev
+npm run dev:client
+npm run dev:server
+npm run dev:website
 npm run build
 npm test
-npm run start
 ```
-
-## Notes
-
-- Business admin access is lightweight and business-specific. Passcodes are generated when the business is created.
-- Conversion is tracked as `lead -> booking`, not just raw booking submissions.
-- On restart, the scheduler reloads pending jobs from the database.
-- Render Free is acceptable for demos and MVP usage, but sleeping hosts can delay job execution until the process wakes back up.
-- Because the scheduler is in-process, delayed jobs are best-effort on free hosting and run reliably only while the service is awake.

@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: business-automation-mvp
+    name: axora
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build
+    buildCommand: npm install && npm run build --workspace shared && npm run build --workspace server && npm run build --workspace client
     startCommand: npm run start
     healthCheckPath: /api/health
     autoDeploy: true
@@ -13,6 +13,10 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: CLIENT_ORIGIN
+        sync: false
+      - key: WEBSITE_ORIGIN
+        sync: false
+      - key: PLATFORM_ROOT_DOMAIN
         sync: false
       - key: APP_BASE_URL
         sync: false
@@ -25,4 +29,18 @@ services:
       - key: RESEND_FROM_EMAIL
         sync: false
       - key: SUPPORT_EMAIL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: site-assets
+      - key: VERCEL_API_TOKEN
+        sync: false
+      - key: VERCEL_PROJECT_ID
+        sync: false
+      - key: VERCEL_TEAM_ID
+        sync: false
+      - key: VERCEL_TEAM_SLUG
         sync: false

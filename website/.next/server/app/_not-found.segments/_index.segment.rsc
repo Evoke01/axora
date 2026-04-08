@@ -1,0 +1,5 @@
+1:"$Sreact.fragment"
+2:I[1133,[],""]
+3:I[4297,[],""]
+:HL["/_next/static/css/0add957ec2e5dec6.css","style"]
+0:{"rsc":["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/css/0add957ec2e5dec6.css","precedence":"next"}]],["$","html",null,{"lang":"en","className":"__variable_73ee6c __variable_dd5b2f","children":["$","body",null,{"children":["$","$L2",null,{"parallelRouterKey":"children","template":["$","$L3",null,{}],"notFound":[["$","main",null,{"style":{"minHeight":"100vh","display":"grid","placeItems":"center","padding":"2rem"},"children":["$","div",null,{"style":{"maxWidth":520,"textAlign":"center"},"children":[["$","p",null,{"style":{"textTransform":"uppercase","letterSpacing":"0.18em","opacity":0.6},"children":"Website not found"}],["$","h1",null,{"style":{"fontSize":"clamp(2.2rem, 6vw, 4rem)","marginBottom":"1rem"},"children":"This hostname is not mapped yet."}],["$","p",null,{"style":{"opacity":0.75},"children":"Connect the preview or custom domain from the Axora admin, then publish the site again."}]]}]}],[]]}]}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"3q9xy0dykTu97QaaBhHEU"}

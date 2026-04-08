@@ -107,3 +107,41 @@ where message_log.booking_id = bookings.id
   and message_log.business_id is null;
 
 create index if not exists message_log_business_created_idx on message_log (business_id, created_at desc);
+
+create table if not exists website_configs (
+  id text primary key,
+  business_id text not null unique references businesses(id) on delete cascade,
+  template_key text not null check (
+    template_key in (
+      'salon-editorial',
+      'salon-premium-beauty',
+      'salon-soft-luxury',
+      'gym-performance',
+      'gym-coaching',
+      'gym-membership'
+    )
+  ),
+  draft_json jsonb not null,
+  published_json jsonb not null,
+  theme_json jsonb not null,
+  seo_json jsonb not null,
+  publish_version integer not null default 1,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists website_configs_business_idx on website_configs (business_id);
+
+create table if not exists website_domains (
+  id text primary key,
+  business_id text not null references businesses(id) on delete cascade,
+  hostname text not null unique,
+  kind text not null check (kind in ('preview', 'custom')),
+  status text not null check (status in ('active', 'pending_verification', 'error')),
+  verification_json jsonb not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists website_domains_business_idx on website_domains (business_id, created_at asc);
+create index if not exists website_domains_host_idx on website_domains (lower(hostname));
