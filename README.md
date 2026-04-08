@@ -162,5 +162,7 @@ npm run dev:client
 npm run dev:server
 npm run dev:website
 npm run build
+npm run build:website
+npm run build:all
 npm test
 ```
