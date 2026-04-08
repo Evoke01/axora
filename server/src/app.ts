@@ -63,14 +63,76 @@ function getRequestOrigin(req: express.Request) {
   return `${proto}://${host}`;
 }
 
-function getWebsiteOrigin(config: AppConfig) {
-  if (!/localhost|127\.0\.0\.1/i.test(config.WEBSITE_ORIGIN)) {
-    return config.WEBSITE_ORIGIN;
+function isLocalOrigin(value: string) {
+  return /localhost|127\.0\.0\.1/i.test(value);
+}
+
+function appendVercelScope(url: URL, config: AppConfig) {
+  if (config.VERCEL_TEAM_ID) {
+    url.searchParams.set("teamId", config.VERCEL_TEAM_ID);
   }
-  if (config.NODE_ENV === "production" && !/localhost|127\.0\.0\.1/i.test(config.PLATFORM_ROOT_DOMAIN)) {
-    return `https://${config.PLATFORM_ROOT_DOMAIN}`;
+  if (config.VERCEL_TEAM_SLUG) {
+    url.searchParams.set("slug", config.VERCEL_TEAM_SLUG);
   }
-  return config.WEBSITE_ORIGIN;
+  return url;
+}
+
+function createWebsiteOriginResolver(config: AppConfig) {
+  let cachedOrigin: string | null = null;
+  let pendingOrigin: Promise<string> | null = null;
+
+  async function fetchFromVercel() {
+    if (!config.VERCEL_API_TOKEN || !config.VERCEL_PROJECT_ID) {
+      return null;
+    }
+
+    const url = appendVercelScope(new URL(`https://api.vercel.com/v9/projects/${config.VERCEL_PROJECT_ID}/domains`), config);
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${config.VERCEL_API_TOKEN}`,
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as {
+      domains?: Array<{ name?: string; verified?: boolean }>;
+    };
+
+    const verified = payload.domains?.find((domain) => domain.verified && domain.name);
+    return verified?.name ? `https://${verified.name}` : null;
+  }
+
+  return async function resolveWebsiteOrigin() {
+    if (cachedOrigin) {
+      return cachedOrigin;
+    }
+
+    if (!isLocalOrigin(config.WEBSITE_ORIGIN)) {
+      cachedOrigin = config.WEBSITE_ORIGIN;
+      return cachedOrigin;
+    }
+
+    if (config.NODE_ENV === "production" && config.PLATFORM_ROOT_DOMAIN && !isLocalOrigin(config.PLATFORM_ROOT_DOMAIN)) {
+      cachedOrigin = `https://${config.PLATFORM_ROOT_DOMAIN}`;
+      return cachedOrigin;
+    }
+
+    if (!pendingOrigin) {
+      pendingOrigin = fetchFromVercel()
+        .then((origin) => {
+          cachedOrigin = origin ?? config.WEBSITE_ORIGIN;
+          return cachedOrigin;
+        })
+        .finally(() => {
+          pendingOrigin = null;
+        });
+    }
+
+    return pendingOrigin;
+  };
 }
 
 function createRequireAdmin(secret: string) {
@@ -110,6 +172,7 @@ function handleError(error: unknown, res: express.Response) {
 export function createApp(config: AppConfig, bookingService: BookingService) {
   const app = express();
   const requireAdmin = createRequireAdmin(config.SESSION_SECRET);
+  const resolveWebsiteOrigin = createWebsiteOriginResolver(config);
 
   app.use(cors({ origin: [config.CLIENT_ORIGIN, config.WEBSITE_ORIGIN], credentials: true }));
   app.use(express.json({ limit: "10mb" }));
@@ -121,10 +184,11 @@ export function createApp(config: AppConfig, bookingService: BookingService) {
   app.post("/api/businesses", async (req, res) => {
     try {
       const input = businessCreateInputSchema.parse(req.body);
+      const websiteOrigin = await resolveWebsiteOrigin();
       const result = await bookingService.createBusiness(input, {
         requestOrigin: getRequestOrigin(req),
         clientOrigin: getRequestOrigin(req),
-        websiteOrigin: getWebsiteOrigin(config),
+        websiteOrigin,
       });
       res.status(201).json(businessCreateResultSchema.parse(result));
     } catch (error) {
@@ -135,10 +199,11 @@ export function createApp(config: AppConfig, bookingService: BookingService) {
   app.get("/api/public-config/:businessSlug", async (req, res) => {
     try {
       const businessSlug = getParam(req.params.businessSlug);
+      const websiteOrigin = await resolveWebsiteOrigin();
       const payload = await bookingService.getPublicConfig(businessSlug ?? "", {
         requestOrigin: getRequestOrigin(req),
         clientOrigin: getRequestOrigin(req),
-        websiteOrigin: getWebsiteOrigin(config),
+        websiteOrigin,
       });
       res.json(publicConfigSchema.parse(payload));
     } catch (error) {
@@ -197,10 +262,11 @@ export function createApp(config: AppConfig, bookingService: BookingService) {
   app.get("/api/admin/:businessSlug/dashboard", requireAdmin, async (req, res) => {
     try {
       const businessSlug = getParam(req.params.businessSlug);
+      const websiteOrigin = await resolveWebsiteOrigin();
       const dashboard = await bookingService.getDashboard(businessSlug ?? "", {
         requestOrigin: getRequestOrigin(req),
         clientOrigin: getRequestOrigin(req),
-        websiteOrigin: getWebsiteOrigin(config),
+        websiteOrigin,
       });
       res.json(dashboardSchema.parse(dashboard));
     } catch (error) {
@@ -211,10 +277,11 @@ export function createApp(config: AppConfig, bookingService: BookingService) {
   app.get("/api/admin/:businessSlug/site", requireAdmin, async (req, res) => {
     try {
       const businessSlug = getParam(req.params.businessSlug);
+      const websiteOrigin = await resolveWebsiteOrigin();
       const site = await bookingService.getSiteEditor(businessSlug ?? "", {
         requestOrigin: getRequestOrigin(req),
         clientOrigin: getRequestOrigin(req),
-        websiteOrigin: getWebsiteOrigin(config),
+        websiteOrigin,
       });
       res.json(siteEditorPayloadSchema.parse(site));
     } catch (error) {

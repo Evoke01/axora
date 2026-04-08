@@ -1,7 +1,7 @@
 import type { BookingInput, BusinessCreateResult, DashboardPayload } from "@business-automation/shared";
 import { newDb } from "pg-mem";
 import request from "supertest";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { createApp } from "../src/app.js";
 import type { AppConfig } from "../src/config.js";
 import { applySchema } from "../src/db.js";
@@ -103,6 +103,7 @@ async function waitFor(condition: () => Promise<boolean>, timeoutMs = 1200) {
 }
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   await Promise.all(harnesses.splice(0).map((harness) => harness.close()));
 });
 
@@ -126,6 +127,37 @@ describe("axora white-label website generator", () => {
     expect(siteResponse.body.site.templateKey).toBe("gym-performance");
     expect(siteResponse.body.preview.previewUrl).toContain("/preview/north-star-gym");
     expect(siteResponse.body.domains[0].kind).toBe("preview");
+  });
+
+  test("uses the Vercel project domain for public links when production env still has localhost defaults", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          domains: [{ name: "axora-ops.vercel.app", verified: true }],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const harness = await createHarness({
+      NODE_ENV: "production",
+      WEBSITE_ORIGIN: "http://localhost:3000",
+      PLATFORM_ROOT_DOMAIN: "axora.localhost",
+      VERCEL_API_TOKEN: "vercel-token",
+      VERCEL_PROJECT_ID: "prj_123",
+      VERCEL_TEAM_ID: "team_123",
+    });
+
+    const response = await request(harness.app)
+      .post("/api/businesses")
+      .set("Host", "axora-api-v9.onrender.com")
+      .set("X-Forwarded-Proto", "https")
+      .send({ name: "Luma Salon", type: "salon" })
+      .expect(201);
+
+    expect(response.body.previewSiteUrl).toBe("https://axora-ops.vercel.app/preview/luma-salon");
+    expect(response.body.bookingLink).toBe("https://axora-ops.vercel.app/preview/luma-salon/book");
+    expect(response.body.adminLink).toBe("https://axora-api-v9.onrender.com/admin/luma-salon");
   });
 
   test("captures leads, converts them into bookings, and reports impact metrics", async () => {
