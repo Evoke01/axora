@@ -782,7 +782,14 @@ export class BookingService {
     return;
   }
 
-  async createBusiness(rawInput: BusinessCreateInput): Promise<BusinessCreateResult> {
+  async createBusiness(
+    rawInput: BusinessCreateInput,
+    urlContext?: {
+      requestOrigin?: string;
+      clientOrigin?: string;
+      websiteOrigin?: string;
+    },
+  ): Promise<BusinessCreateResult> {
     const input = businessCreateInputSchema.parse(rawInput);
     const slug = await this.generateUniqueSlug(input.name);
     const generatedPasscode = generatePasscode(input.type);
@@ -815,7 +822,7 @@ export class BookingService {
       verification: buildPreviewVerification(this.buildPreviewHostname(slug), this.appConfig.PLATFORM_ROOT_DOMAIN),
     });
 
-    const identity = this.toBusinessIdentity(business, siteConfig);
+    const identity = this.toBusinessIdentity(business, siteConfig, urlContext);
     return {
       business: identity,
       generatedPasscode,
@@ -826,10 +833,17 @@ export class BookingService {
     };
   }
 
-  async getPublicConfig(businessSlug: string): Promise<PublicConfig> {
+  async getPublicConfig(
+    businessSlug: string,
+    urlContext?: {
+      requestOrigin?: string;
+      clientOrigin?: string;
+      websiteOrigin?: string;
+    },
+  ): Promise<PublicConfig> {
     const bundle = await this.getBusinessBundleOrThrow(businessSlug);
     return {
-      business: this.toBusinessIdentity(bundle.business, bundle.site),
+      business: this.toBusinessIdentity(bundle.business, bundle.site, urlContext),
       plans: planCatalog,
     };
   }
@@ -898,7 +912,14 @@ export class BookingService {
     return booking;
   }
 
-  async getDashboard(businessSlug: string): Promise<DashboardPayload> {
+  async getDashboard(
+    businessSlug: string,
+    urlContext?: {
+      requestOrigin?: string;
+      clientOrigin?: string;
+      websiteOrigin?: string;
+    },
+  ): Promise<DashboardPayload> {
     const bundle = await this.getBusinessBundleOrThrow(businessSlug);
     const snapshot = await this.repository.getDashboardSnapshot(bundle.business.id);
     if (!snapshot) {
@@ -927,7 +948,7 @@ export class BookingService {
     const conversionRate = totalLeads === 0 ? 0 : convertedLeads / totalLeads;
 
     return {
-      business: this.toBusinessIdentity(bundle.business, bundle.site),
+      business: this.toBusinessIdentity(bundle.business, bundle.site, urlContext),
       impact: {
         bookingsToday,
         bookingsThisWeek,
@@ -946,17 +967,24 @@ export class BookingService {
     };
   }
 
-  async getSiteEditor(businessSlug: string): Promise<SiteEditorPayload> {
+  async getSiteEditor(
+    businessSlug: string,
+    urlContext?: {
+      requestOrigin?: string;
+      clientOrigin?: string;
+      websiteOrigin?: string;
+    },
+  ): Promise<SiteEditorPayload> {
     const bundle = await this.getBusinessBundleOrThrow(businessSlug);
     const domains = await this.repository.listWebsiteDomains(bundle.business.id);
     return {
-      business: this.toBusinessIdentity(bundle.business, bundle.site),
+      business: this.toBusinessIdentity(bundle.business, bundle.site, urlContext),
       site: bundle.site,
       domains,
       preview: {
-        previewUrl: this.buildPreviewSiteUrl(bundle.business.slug),
-        draftPreviewUrl: this.buildDraftPreviewUrl(bundle.business.slug, "draft"),
-        publishedPreviewUrl: this.buildDraftPreviewUrl(bundle.business.slug, "published"),
+        previewUrl: this.buildPreviewSiteUrl(bundle.business.slug, urlContext),
+        draftPreviewUrl: this.buildDraftPreviewUrl(bundle.business.slug, "draft", urlContext),
+        publishedPreviewUrl: this.buildDraftPreviewUrl(bundle.business.slug, "published", urlContext),
         availableThemes: themePresetCatalog.filter((preset) => preset.type === bundle.business.type),
       },
     };
@@ -1207,8 +1235,16 @@ export class BookingService {
     return { business, site };
   }
 
-  private toBusinessIdentity(business: Business, site: WebsiteConfig): BusinessIdentity {
-    const previewSiteUrl = this.buildPreviewSiteUrl(business.slug);
+  private toBusinessIdentity(
+    business: Business,
+    site: WebsiteConfig,
+    urlContext?: {
+      requestOrigin?: string;
+      clientOrigin?: string;
+      websiteOrigin?: string;
+    },
+  ): BusinessIdentity {
+    const previewSiteUrl = this.buildPreviewSiteUrl(business.slug, urlContext);
     return {
       id: business.id,
       name: business.name,
@@ -1221,7 +1257,7 @@ export class BookingService {
       createdAt: business.createdAt,
       updatedAt: business.updatedAt,
       bookingLink: `${previewSiteUrl.replace(/\/$/, "")}/book`,
-      adminLink: `${this.appConfig.CLIENT_ORIGIN.replace(/\/$/, "")}/admin/${business.slug}`,
+      adminLink: `${this.resolveClientOrigin(urlContext).replace(/\/$/, "")}/admin/${business.slug}`,
       previewSiteUrl,
       themeKey: site.templateKey,
     };
@@ -1243,14 +1279,73 @@ export class BookingService {
     return `${slug}.${this.appConfig.PLATFORM_ROOT_DOMAIN}`.toLowerCase();
   }
 
-  private buildPreviewSiteUrl(slug: string) {
-    const websiteOrigin = this.appConfig.WEBSITE_ORIGIN.replace(/\/$/, "");
+  private buildPreviewSiteUrl(
+    slug: string,
+    urlContext?: {
+      requestOrigin?: string;
+      clientOrigin?: string;
+      websiteOrigin?: string;
+    },
+  ) {
+    const websiteOrigin = this.resolveWebsiteOrigin(urlContext).replace(/\/$/, "");
     return `${websiteOrigin}${buildPreviewPath(slug)}`;
   }
 
-  private buildDraftPreviewUrl(slug: string, state: PreviewState) {
-    const websiteOrigin = this.appConfig.WEBSITE_ORIGIN.replace(/\/$/, "");
+  private buildDraftPreviewUrl(
+    slug: string,
+    state: PreviewState,
+    urlContext?: {
+      requestOrigin?: string;
+      clientOrigin?: string;
+      websiteOrigin?: string;
+    },
+  ) {
+    const websiteOrigin = this.resolveWebsiteOrigin(urlContext).replace(/\/$/, "");
     return `${websiteOrigin}${buildPreviewPath(slug)}?state=${state}`;
+  }
+
+  private resolveClientOrigin(urlContext?: {
+    requestOrigin?: string;
+    clientOrigin?: string;
+    websiteOrigin?: string;
+  }) {
+    if (urlContext?.clientOrigin) {
+      return urlContext.clientOrigin;
+    }
+    if (!this.shouldAvoidLocalhost(this.appConfig.CLIENT_ORIGIN)) {
+      return this.appConfig.CLIENT_ORIGIN;
+    }
+    if (urlContext?.requestOrigin) {
+      return urlContext.requestOrigin;
+    }
+    if (!this.shouldAvoidLocalhost(this.appConfig.APP_BASE_URL)) {
+      return this.appConfig.APP_BASE_URL;
+    }
+    return this.appConfig.CLIENT_ORIGIN;
+  }
+
+  private resolveWebsiteOrigin(urlContext?: {
+    requestOrigin?: string;
+    clientOrigin?: string;
+    websiteOrigin?: string;
+  }) {
+    if (urlContext?.websiteOrigin) {
+      return urlContext.websiteOrigin;
+    }
+    if (!this.shouldAvoidLocalhost(this.appConfig.WEBSITE_ORIGIN)) {
+      return this.appConfig.WEBSITE_ORIGIN;
+    }
+    if (this.appConfig.PLATFORM_ROOT_DOMAIN && !this.appConfig.PLATFORM_ROOT_DOMAIN.includes("localhost")) {
+      return `https://${this.appConfig.PLATFORM_ROOT_DOMAIN}`;
+    }
+    return this.appConfig.WEBSITE_ORIGIN;
+  }
+
+  private shouldAvoidLocalhost(value: string) {
+    if (this.appConfig.NODE_ENV !== "production") {
+      return false;
+    }
+    return /localhost|127\.0\.0\.1/i.test(value);
   }
 
   private async scheduleReminder(booking: Booking, business: Business) {

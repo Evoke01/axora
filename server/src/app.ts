@@ -45,6 +45,34 @@ function getParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function getRequestOrigin(req: express.Request) {
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  const proto = typeof forwardedProto === "string" ? forwardedProto.split(",")[0]?.trim() : req.protocol;
+  const forwardedHost = req.headers["x-forwarded-host"];
+  const host =
+    typeof forwardedHost === "string"
+      ? forwardedHost.split(",")[0]?.trim()
+      : typeof req.headers.host === "string"
+        ? req.headers.host
+        : null;
+
+  if (!proto || !host) {
+    return undefined;
+  }
+
+  return `${proto}://${host}`;
+}
+
+function getWebsiteOrigin(config: AppConfig) {
+  if (!/localhost|127\.0\.0\.1/i.test(config.WEBSITE_ORIGIN)) {
+    return config.WEBSITE_ORIGIN;
+  }
+  if (config.NODE_ENV === "production" && !/localhost|127\.0\.0\.1/i.test(config.PLATFORM_ROOT_DOMAIN)) {
+    return `https://${config.PLATFORM_ROOT_DOMAIN}`;
+  }
+  return config.WEBSITE_ORIGIN;
+}
+
 function createRequireAdmin(secret: string) {
   return (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const businessSlug = getParam(req.params.businessSlug);
@@ -93,7 +121,11 @@ export function createApp(config: AppConfig, bookingService: BookingService) {
   app.post("/api/businesses", async (req, res) => {
     try {
       const input = businessCreateInputSchema.parse(req.body);
-      const result = await bookingService.createBusiness(input);
+      const result = await bookingService.createBusiness(input, {
+        requestOrigin: getRequestOrigin(req),
+        clientOrigin: getRequestOrigin(req),
+        websiteOrigin: getWebsiteOrigin(config),
+      });
       res.status(201).json(businessCreateResultSchema.parse(result));
     } catch (error) {
       handleError(error, res);
@@ -103,7 +135,11 @@ export function createApp(config: AppConfig, bookingService: BookingService) {
   app.get("/api/public-config/:businessSlug", async (req, res) => {
     try {
       const businessSlug = getParam(req.params.businessSlug);
-      const payload = await bookingService.getPublicConfig(businessSlug ?? "");
+      const payload = await bookingService.getPublicConfig(businessSlug ?? "", {
+        requestOrigin: getRequestOrigin(req),
+        clientOrigin: getRequestOrigin(req),
+        websiteOrigin: getWebsiteOrigin(config),
+      });
       res.json(publicConfigSchema.parse(payload));
     } catch (error) {
       handleError(error, res);
@@ -161,7 +197,11 @@ export function createApp(config: AppConfig, bookingService: BookingService) {
   app.get("/api/admin/:businessSlug/dashboard", requireAdmin, async (req, res) => {
     try {
       const businessSlug = getParam(req.params.businessSlug);
-      const dashboard = await bookingService.getDashboard(businessSlug ?? "");
+      const dashboard = await bookingService.getDashboard(businessSlug ?? "", {
+        requestOrigin: getRequestOrigin(req),
+        clientOrigin: getRequestOrigin(req),
+        websiteOrigin: getWebsiteOrigin(config),
+      });
       res.json(dashboardSchema.parse(dashboard));
     } catch (error) {
       handleError(error, res);
@@ -171,7 +211,11 @@ export function createApp(config: AppConfig, bookingService: BookingService) {
   app.get("/api/admin/:businessSlug/site", requireAdmin, async (req, res) => {
     try {
       const businessSlug = getParam(req.params.businessSlug);
-      const site = await bookingService.getSiteEditor(businessSlug ?? "");
+      const site = await bookingService.getSiteEditor(businessSlug ?? "", {
+        requestOrigin: getRequestOrigin(req),
+        clientOrigin: getRequestOrigin(req),
+        websiteOrigin: getWebsiteOrigin(config),
+      });
       res.json(siteEditorPayloadSchema.parse(site));
     } catch (error) {
       handleError(error, res);
